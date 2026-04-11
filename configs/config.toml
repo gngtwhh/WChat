@@ -1,0 +1,30 @@
+[mainConfig]
+appName = "wchat"
+host = "0.0.0.0"
+port = 8080
+jwtSecret = "your-secret-key-here"
+jwtExpireTime = 86400      # 秒
+
+[mysqlConfig]
+host = "localhost"
+port = 3306
+user = "wchat_user"
+password = "wchat123"
+databaseName = "wchat"
+
+[redisConfig]
+host = "127.0.0.1"
+port = 6379
+password = ""
+db = 0
+
+[kafkaConfig]
+messageMode = "direct"     # 不用kafka时随意填
+hostPort = "127.0.0.1:9092"
+
+[logConfig]
+logPath = "logs/wchat.log"
+
+[staticSrcConfig]
+staticAvatarPath = "static/avatar"
+staticFilePath = "static/file"

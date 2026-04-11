@@ -2,82 +2,80 @@ package websocket
 
 import "sync"
 
+// Hub maintains the set of active clients and routes messages to online users.
 type Hub struct {
-    clients    map[string]map[*Client]bool // map Uuid --> map[*Client]bool | 多端登录
-    mu         sync.RWMutex
-    Register   chan *Client // 客户端上线
-    Unregister chan *Client // 客户端下线
+	clients    map[string]map[*Client]bool // UserID -> connections, supports multi-device login
+	mu         sync.RWMutex
+	register   chan *Client
+	unregister chan *Client
 }
 
-func NewHub() *Hub {
-    return &Hub{
-        clients:    make(map[string]map[*Client]bool),
-        Register:   make(chan *Client),
-        Unregister: make(chan *Client),
-    }
+func newHub() *Hub {
+	return &Hub{
+		clients:    make(map[string]map[*Client]bool),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
+	}
 }
 
-func (h *Hub) Run() {
-    for {
-        select {
-        case client := <-h.Register:
-            // handle online
-            h.mu.Lock()
-            if h.clients[client.Uuid] == nil {
-                h.clients[client.Uuid] = make(map[*Client]bool)
-            }
-            h.clients[client.Uuid][client] = true
-            h.mu.Unlock()
+// run listens for register/unregister events and maintains the client map.
+func (h *Hub) run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.mu.Lock()
+			if h.clients[client.UserID] == nil {
+				h.clients[client.UserID] = make(map[*Client]bool)
+			}
+			h.clients[client.UserID][client] = true
+			h.mu.Unlock()
 
-        case client := <-h.Unregister:
-            // handle offline
-            h.mu.Lock()
-            if connections, ok := h.clients[client.Uuid]; ok {
-                if _, exists := connections[client]; exists {
-                    delete(connections, client)
-                    close(client.Send)
-
-                    if len(connections) == 0 {
-                        delete(h.clients, client.Uuid)
-                    }
-                }
-            }
-            h.mu.Unlock()
-        }
-    }
+		case client := <-h.unregister:
+			h.mu.Lock()
+			if conns, ok := h.clients[client.UserID]; ok {
+				if _, exists := conns[client]; exists {
+					delete(conns, client)
+					close(client.send)
+					if len(conns) == 0 {
+						delete(h.clients, client.UserID)
+					}
+				}
+			}
+			h.mu.Unlock()
+		}
+	}
 }
 
+// SendToUser delivers a message to all active connections of the given user.
+// Non-blocking: drops the message if a client's send buffer is full.
 func (h *Hub) SendToUser(userID string, message []byte) {
-    h.mu.RLock()
-    defer h.mu.RUnlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
-    // check online
-    connections, ok := h.clients[userID]
-    if !ok {
-        return
-    }
+	conns, ok := h.clients[userID]
+	if !ok {
+		return
+	}
 
-    for client := range connections {
-        select {
-        case client.Send <- message:
-            // 成功塞入该客户端的发送管道
-        default:
-            // 如果发送管道满了 (比如客户端网络极差卡死了)
-            // 为了不阻塞其他推送，这里直接走 default 丢弃，Client 的 ReadPump 会发现网络断开并触发清理
-        }
-    }
+	for client := range conns {
+		select {
+		case client.send <- message:
+		default:
+		}
+	}
 }
 
+// Broadcast delivers a message to all connected clients.
 func (h *Hub) Broadcast(message []byte) {
-    h.mu.RLock()
-    defer h.mu.RUnlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
-    for _, connections := range h.clients {
-        for client := range connections {
-            select {
-            case client.Send <- message:
-            default:
-            }
-        }
-    }
+	for _, conns := range h.clients {
+		for client := range conns {
+			select {
+			case client.send <- message:
+			default:
+			}
+		}
+	}
 }

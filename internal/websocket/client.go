@@ -1,101 +1,95 @@
 package websocket
 
 import (
-    "time"
-    "wchat/pkg/zlog"
+	"time"
+	"wchat/pkg/zlog"
 
-    "github.com/gorilla/websocket"
-    "go.uber.org/zap"
+	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 const (
-    writeWait      = 10 * time.Second    // 允许向客户端写入数据的最长时间
-    pongWait       = 60 * time.Second    // 允许读取客户端下一个 Pong 响应的最长时间
-    pingPeriod     = (pongWait * 9) / 10 // 向客户端发送 Ping 的周期 (必须小于 pongWait)
-    maxMessageSize = 4096                // 允许读取的最大消息体积 (防恶意大包攻击)
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 4096
+	sendBufferSize = 256
 )
 
+// Client represents a single WebSocket connection bound to a user.
 type Client struct {
-    Hub  *Hub
-    Conn *websocket.Conn
-    Send chan []byte
-    Uuid string
+	hub      *Hub
+	conn     *websocket.Conn
+	send     chan []byte
+	UserID   string
+	dispatch func(*Client, []byte) // set by Dispatcher.Dispatch
 }
 
-// ReadPump
-func (c *Client) ReadPump() {
-    defer func() {
-        c.Hub.Unregister <- c
-        c.Conn.Close()
-    }()
+// readPump reads messages from the WebSocket connection and forwards them to the dispatcher.
+func (c *Client) readPump() {
+	defer func() {
+		c.hub.unregister <- c
+		c.conn.Close()
+	}()
 
-    c.Conn.SetReadLimit(maxMessageSize)
-    c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 
-    // set heartbeat packet handler
-    c.Conn.SetPongHandler(
-        func(string) error {
-            c.Conn.SetReadDeadline(time.Now().Add(pongWait))
-            return nil
-        },
-    )
-
-    for {
-        _, message, err := c.Conn.ReadMessage()
-        if err != nil {
-            if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-                zlog.Error("websocket read err", zap.Error(err))
-            }
-            break
-        }
-
-        // TODO: 【核心纽带】在这里将 message 交给 dispatcher (调度器)
-        // 解析 WsMessage 协议，并调用对应的 Service 层逻辑！
-        // dispatcher.Dispatch(c, message)
-        _ = message
-    }
+	for {
+		_, message, err := c.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				zlog.Error("websocket read error", zap.Error(err))
+			}
+			break
+		}
+		c.dispatch(c, message)
+	}
 }
 
-func (c *Client) WritePump() {
-    ticker := time.NewTicker(pingPeriod)
-    defer func() {
-        ticker.Stop()
-        c.Conn.Close()
-    }()
+// writePump pumps messages from the send channel to the WebSocket connection.
+func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.conn.Close()
+	}()
 
-    for {
-        select {
-        case message, ok := <-c.Send:
-            c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-            if !ok {
-                // hub closed the channel
-                c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-                return
-            }
+	for {
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
 
-            w, err := c.Conn.NextWriter(websocket.TextMessage)
-            if err != nil {
-                return
-            }
-            w.Write(message)
+			w, err := c.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
 
-            // TODO: 解决 NDJSON 的问题
-            n := len(c.Send)
-            for i := 0; i < n; i++ {
-                w.Write([]byte{'\n'})
-                w.Write(<-c.Send)
-            }
+			// Batch queued messages into a single write
+			n := len(c.send)
+			for i := 0; i < n; i++ {
+				w.Write([]byte{'\n'})
+				w.Write(<-c.send)
+			}
 
-            if err := w.Close(); err != nil {
-                return
-            }
+			if err := w.Close(); err != nil {
+				return
+			}
 
-        case <-ticker.C:
-            // Ping heartbeat packet
-            c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-            if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-                return
-            }
-        }
-    }
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
 }

@@ -1,70 +1,83 @@
 package service
 
 import (
-    "context"
+	"context"
+	"errors"
 
-    "wchat/internal/repository"
-    "wchat/pkg/errcode"
+	"gorm.io/gorm"
+
+	"wchat/internal/repository"
+	"wchat/pkg/errcode"
 )
 
 type ContactInfo struct {
-    ContactId string
-    Nickname  string
-    Avatar    string
-    Signature string
-    Status    int8
+	ContactId string
+	Nickname  string
+	Avatar    string
+	Signature string
+	Status    int8
 }
 
 type ContactService struct {
-    contactRepo *repository.ContactRepo
+	contactRepo *repository.ContactRepo
 }
 
 func NewContactService(contactRepo *repository.ContactRepo) *ContactService {
-    return &ContactService{
-        contactRepo: contactRepo,
-    }
+	return &ContactService{
+		contactRepo: contactRepo,
+	}
 }
 
 func (s *ContactService) GetUserContactList(ctx context.Context, userID string) ([]ContactInfo, error) {
-    repoDetails, err := s.contactRepo.FindUserContactsWithDetails(ctx, userID, 0)
-    if err != nil {
-        return nil, err
-    }
+	repoDetails, err := s.contactRepo.FindUserContactsWithDetails(ctx, userID, 0)
+	if err != nil {
+		return nil, err
+	}
 
-    // Maps repo-DTO to service-DTO to enforce strict layer decoupling and prevent import cycles;
-    // to eliminate this boilerplate,
-    // the struct could alternatively be sunk into the bottom-most 'model' package.
-    infos := make([]ContactInfo, 0, len(repoDetails))
-    for _, d := range repoDetails {
-        infos = append(
-            infos, ContactInfo{
-                ContactId: d.ContactId,
-                Nickname:  d.Nickname,
-                Avatar:    d.Avatar,
-                Signature: d.Signature,
-                Status:    d.Status,
-            },
-        )
-    }
+	infos := make([]ContactInfo, 0, len(repoDetails))
+	for _, d := range repoDetails {
+		infos = append(
+			infos, ContactInfo{
+				ContactId: d.ContactId,
+				Nickname:  d.Nickname,
+				Avatar:    d.Avatar,
+				Signature: d.Signature,
+				Status:    d.Status,
+			},
+		)
+	}
 
-    return infos, nil
+	return infos, nil
 }
 
-func (s *ContactService) UpdateBiDirectionalStatus(
-    ctx context.Context, userID, targetID string, activeStatus, passiveStatus int8,
-) error {
-    exists, err := s.contactRepo.CheckContactExists(ctx, userID, targetID)
-    if err != nil {
-        return err
-    }
-    if !exists {
-        return errcode.New(errcode.ContactNotFound)
-    }
+func (s *ContactService) DeleteContact(ctx context.Context, userID, targetID string) error {
+	return mapContactActionErr(
+		s.contactRepo.DeletePair(ctx, userID, targetID),
+		"contact relation changed, delete is not allowed",
+	)
+}
 
-    err = s.contactRepo.UpdateStatusTx(ctx, userID, targetID, activeStatus, passiveStatus)
-    if err != nil {
-        return err
-    }
+func (s *ContactService) BlockContact(ctx context.Context, userID, targetID string) error {
+	return mapContactActionErr(
+		s.contactRepo.BlockPair(ctx, userID, targetID),
+		"contact relation changed, block is not allowed",
+	)
+}
 
-    return nil
+func (s *ContactService) UnblockContact(ctx context.Context, userID, targetID string) error {
+	return mapContactActionErr(
+		s.contactRepo.UnblockPair(ctx, userID, targetID),
+		"contact is not blocked by you, unblock is not allowed",
+	)
+}
+
+func mapContactActionErr(err error, conflictMsg string) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return errcode.New(errcode.ContactNotFound)
+	}
+	if errors.Is(err, repository.ErrContactStateConflict) {
+		return errcode.NewWithMsg(errcode.ParamError, conflictMsg)
+	}
+
+	return err
 }

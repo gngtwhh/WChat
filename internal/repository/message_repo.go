@@ -1,51 +1,55 @@
 package repository
 
 import (
-    "context"
+	"context"
 
-    "wchat/internal/model"
+	"wchat/internal/model"
 
-    "gorm.io/gorm"
+	"gorm.io/gorm"
 )
 
 type MessageRepo struct {
-    db *gorm.DB
+	db *gorm.DB
 }
 
 func NewMessageRepo(db *gorm.DB) *MessageRepo {
-    return &MessageRepo{db: db}
+	return &MessageRepo{db: db}
 }
 
-func (r *MessageRepo) FindMessageList(ctx context.Context, sessionID string, offset, limit int) (
-    int64, []model.Message, error,
+func (r *MessageRepo) FindMessageListByConversation(ctx context.Context, conversationID string, offset, limit int) (
+	int64, []model.Message, error,
 ) {
-    total, err := gorm.G[model.Message](r.db).
-        Where("session_id = ?", sessionID).
-        Count(ctx, "*")
-    if err != nil {
-        return 0, nil, err
-    }
+	total, err := gorm.G[model.Message](r.db).
+		Where("conversation_id = ?", conversationID).
+		Count(ctx, "*")
+	if err != nil {
+		return 0, nil, err
+	}
 
-    messages, err := gorm.G[model.Message](r.db).
-        Where("session_id = ?", sessionID).
-        Order("send_at DESC").
-        Offset(offset).Limit(limit).
-        Find(ctx)
+	messages, err := gorm.G[model.Message](r.db).
+		Where("conversation_id = ?", conversationID).
+		Order("send_at DESC").
+		Offset(offset).Limit(limit).
+		Find(ctx)
 
-    return total, messages, err
+	return total, messages, err
 }
 
-func (r *MessageRepo) FindByUUID(ctx context.Context, uuid string) (*model.Message, error) {
-    msg, err := gorm.G[model.Message](r.db).Where("uuid = ?", uuid).First(ctx)
-    if err != nil {
-        return nil, err
-    }
-    return &msg, nil
+func (r *MessageRepo) FindActiveByUUID(ctx context.Context, uuid string) (*model.Message, error) {
+	msg, err := gorm.G[model.Message](r.db).Where("uuid = ?", uuid).First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
 }
 
-func (r *MessageRepo) UpdateStatus(ctx context.Context, uuid string, status int8) error {
-    _, err := gorm.G[model.Message](r.db).
-        Where("uuid = ?", uuid).
-        Update(ctx, "status", status)
-    return err
+func (r *MessageRepo) Create(ctx context.Context, msg *model.Message) error {
+	return gorm.G[model.Message](r.db).Create(ctx, msg)
+}
+
+func (r *MessageRepo) MarkRecalledByUUID(ctx context.Context, uuid string) error {
+	_, err := gorm.G[model.Message](r.db).
+		Where("uuid = ?", uuid).
+		Update(ctx, "status", 2)
+	return err
 }
