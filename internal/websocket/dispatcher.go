@@ -49,7 +49,7 @@ func newDispatcher(handlers map[int]Handler) *Dispatcher {
 	return &Dispatcher{handlers: handlers}
 }
 
-// Dispatch unmarshals a raw message and delegates to the matching handler.
+// Dispatch unmarshals a raw message and delegates to the matching restful.
 func (d *Dispatcher) Dispatch(client *Client, raw []byte) {
 	var msg wsMessage
 	if err := json.Unmarshal(raw, &msg); err != nil {

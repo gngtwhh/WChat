@@ -1,4 +1,4 @@
-package handler
+package websocket
 
 import (
 	"wchat/internal/service"

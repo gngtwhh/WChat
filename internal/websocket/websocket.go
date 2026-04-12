@@ -47,7 +47,7 @@ func NewWebsocketService(
 }
 
 // ServeWS upgrades an HTTP connection to WebSocket and starts serving the client.
-// It blocks until the connection is closed, so call it at the end of the HTTP handler.
+// It blocks until the connection is closed, so call it at the end of the HTTP restful.
 func (s *WebsocketService) ServeWS(w http.ResponseWriter, r *http.Request, userID string) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

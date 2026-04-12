@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WChat - Test Client</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", sans-serif; height: 100vh; display: flex; background: #f0f2f5; }
+
+/* ---- Login ---- */
+#login-page { display: flex; align-items: center; justify-content: center; width: 100%; }
+#login-page .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.1); width: 360px; }
+#login-page h2 { text-align: center; margin-bottom: 24px; color: #333; }
+#login-page input { width: 100%; padding: 10px 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+#login-page button { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; margin-bottom: 8px; }
+#btn-login { background: #07c160; color: #fff; }
+#btn-register { background: #e8e8e8; color: #333; }
+#login-error { color: #e74c3c; font-size: 13px; text-align: center; min-height: 20px; margin-bottom: 4px; }
+
+/* ---- Chat layout ---- */
+#chat-page { display: none; width: 100%; height: 100vh; }
+.sidebar { width: 300px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+.sidebar-header { padding: 16px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+.sidebar-header .user-info { font-weight: 600; color: #333; cursor: pointer; }
+.sidebar-header button { background: none; border: 1px solid #ddd; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.sidebar-actions { padding: 8px; border-bottom: 1px solid #e0e0e0; display: flex; gap: 4px; flex-wrap: wrap; }
+.sidebar-actions button { flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; min-width: 60px; }
+.sidebar-actions button:hover { background: #f5f5f5; }
+#session-list { flex: 1; overflow-y: auto; }
+.session-item { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.session-item:hover { background: #f5f5f5; }
+.session-item.active { background: #e8f4fd; }
+.session-avatar { width: 40px; height: 40px; border-radius: 50%; background: #07c160; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; flex-shrink: 0; }
+.session-avatar.group { background: #1890ff; }
+.session-info { flex: 1; min-width: 0; }
+.session-name { font-size: 14px; font-weight: 500; color: #333; }
+.session-last { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.session-meta { text-align: right; flex-shrink: 0; }
+.session-time { font-size: 11px; color: #bbb; }
+.session-unread { background: #e74c3c; color: #fff; border-radius: 10px; font-size: 11px; padding: 1px 6px; display: inline-block; margin-top: 2px; }
+
+.main { flex: 1; display: flex; flex-direction: column; }
+.chat-header { padding: 16px 20px; background: #fff; border-bottom: 1px solid #e0e0e0; font-size: 16px; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center; }
+.chat-header .actions button { background: none; border: 1px solid #ddd; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 4px; }
+#messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; background: #f0f2f5; }
+.msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-break: break-word; }
+.msg.sent { align-self: flex-end; background: #95ec69; color: #000; border-bottom-right-radius: 4px; }
+.msg.received { align-self: flex-start; background: #fff; color: #333; border-bottom-left-radius: 4px; }
+.msg .msg-sender { font-size: 11px; color: #1890ff; margin-bottom: 2px; }
+.msg .msg-time { font-size: 11px; color: #999; margin-top: 4px; }
+.msg.system { align-self: center; background: #ddd; color: #666; font-size: 12px; border-radius: 6px; padding: 4px 12px; }
+
+.chat-input { display: flex; padding: 12px 16px; background: #fff; border-top: 1px solid #e0e0e0; gap: 8px; }
+.chat-input textarea { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: none; height: 40px; font-family: inherit; }
+.chat-input button { padding: 8px 20px; background: #07c160; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+
+.placeholder { flex: 1; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 18px; background: #f0f2f5; }
+
+/* ---- WS status ---- */
+#ws-status { font-size: 11px; padding: 4px 8px; text-align: center; }
+.ws-open { color: #07c160; }
+.ws-closed { color: #e74c3c; }
+
+/* ---- Modal ---- */
+.modal-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 100; align-items: center; justify-content: center; }
+.modal-mask.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; padding: 24px; width: 420px; box-shadow: 0 4px 20px rgba(0,0,0,.15); max-height: 80vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 16px; }
+.modal input, .modal select { width: 100%; padding: 8px 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 8px; }
+.modal-btns button { flex: 1; padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.modal-btns .btn-ok { background: #07c160; color: #fff; }
+.modal-btns .btn-cancel { background: #e8e8e8; color: #333; }
+.search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-row input { margin-bottom: 0; }
+.search-row button { width: 70px; flex-shrink: 0; }
+.result-list { max-height: 220px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; margin-bottom: 12px; }
+.result-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.result-item:last-child { border-bottom: none; }
+.result-item .info strong { font-size: 14px; }
+.result-item .info small { color: #999; font-size: 12px; }
+.result-item button { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; color: #fff; background: #07c160; }
+.result-item button.danger { background: #e74c3c; }
+.result-empty { padding: 16px; text-align: center; color: #999; }
+.section-title { font-size: 12px; color: #999; margin: 8px 0; }
+
+/* ---- Log panel ---- */
+#log-panel { display: none; width: 320px; background: #1e1e1e; color: #d4d4d4; font-family: "Cascadia Code", "Fira Code", monospace; font-size: 12px; flex-direction: column; border-left: 1px solid #333; }
+#log-panel.show { display: flex; }
+#log-panel .log-header { padding: 8px 12px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 13px; }
+#log-panel .log-header button { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; }
+#log-content { flex: 1; overflow-y: auto; padding: 8px; }
+#log-content .log-entry { margin-bottom: 4px; border-bottom: 1px solid #2a2a2a; padding-bottom: 4px; }
+.log-cmd { color: #569cd6; }
+.log-in { color: #4ec9b0; }
+.log-out { color: #ce9178; }
+.log-err { color: #f44747; }
+</style>
+</head>
+<body>
+
+<!-- ============ Login Page ============ -->
+<div id="login-page">
+  <div class="card">
+    <h2>WChat</h2>
+    <div id="login-error"></div>
+    <input id="inp-tel" type="text" placeholder="手机号 (11位)" maxlength="11">
+    <input id="inp-pwd" type="password" placeholder="密码">
+    <input id="inp-nick" type="text" placeholder="昵称 (仅注册时需要)" style="display:none">
+    <input id="inp-cpwd" type="password" placeholder="确认密码 (仅注册时需要)" style="display:none">
+    <button id="btn-login" onclick="doLogin()">登 录</button>
+    <button id="btn-register" onclick="toggleRegister()">注 册</button>
+  </div>
+</div>
+
+<!-- ============ Chat Page ============ -->
+<div id="chat-page">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="user-info" id="user-nickname" onclick="showProfile()" title="点击查看/编辑个人信息">-</span>
+      <div>
+        <button onclick="toggleLog()" title="WS日志">Log</button>
+        <button onclick="doLogout()">退出</button>
+      </div>
+    </div>
+    <div class="sidebar-actions">
+      <button onclick="loadSessions()">刷新</button>
+      <button onclick="showSearchUser()">找人</button>
+      <button onclick="showApplies()">申请</button>
+      <button onclick="loadContacts()">通讯录</button>
+      <button onclick="showGroups()">群组</button>
+    </div>
+    <div id="ws-status" class="ws-closed">WebSocket 未连接</div>
+    <div id="session-list"></div>
+  </div>
+
+  <div class="main" id="main-area">
+    <div class="placeholder" id="chat-placeholder">选择一个会话开始聊天</div>
+    <div id="chat-area" style="display:none; flex-direction:column;">
+      <div class="chat-header">
+        <span id="chat-target-name">-</span>
+        <div class="actions">
+          <button onclick="recallLastMsg()" title="撤回最后一条消息">撤回</button>
+          <button onclick="pinCurrentSession()" id="btn-pin">置顶</button>
+          <button onclick="deleteCurrentSession()" style="color:#e74c3c">删除会话</button>
+        </div>
+      </div>
+      <div id="messages"></div>
+      <div class="chat-input">
+        <textarea id="msg-input" placeholder="输入消息..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+        <button onclick="sendMsg()" id="btn-send">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="log-panel">
+    <div class="log-header">
+      <span>WebSocket Log</span>
+      <button onclick="toggleLog()">&times;</button>
+    </div>
+    <div id="log-content"></div>
+  </div>
+</div>
+
+<!-- ============ Search User Modal ============ -->
+<div class="modal-mask" id="modal-search">
+  <div class="modal">
+    <h3>搜索用户</h3>
+    <div class="search-row">
+      <input id="search-kw" placeholder="输入手机号或昵称...">
+      <button class="btn-ok" onclick="doSearchUser()">搜索</button>
+    </div>
+    <div class="result-list" id="search-results" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-search')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Contacts Modal ============ -->
+<div class="modal-mask" id="modal-contacts">
+  <div class="modal">
+    <h3>通讯录</h3>
+    <div class="result-list" id="contact-list"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-contacts')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Apply Modal ============ -->
+<div class="modal-mask" id="modal-apply">
+  <div class="modal">
+    <h3>好友申请</h3>
+    <div class="search-row">
+      <input id="apply-kw" placeholder="搜索手机号/昵称添加好友...">
+      <button class="btn-ok" onclick="doSearchForApply()">搜索</button>
+    </div>
+    <div class="result-list" id="apply-search-results" style="display:none"></div>
+    <div id="apply-send-form" style="display:none; border-top:1px solid #eee; padding-top:12px; margin-top:4px;">
+      <p style="font-size:13px; color:#666; margin-bottom:8px;">申请添加: <strong id="apply-target-name"></strong></p>
+      <input id="apply-msg" placeholder="附加留言 (可选)">
+      <button class="btn-ok" style="width:100%" onclick="doSubmitApply()">发送申请</button>
+    </div>
+    <div class="section-title">收到的申请</div>
+    <div class="result-list" id="apply-received-list"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-apply')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Groups Modal ============ -->
+<div class="modal-mask" id="modal-groups">
+  <div class="modal">
+    <h3>我的群组</h3>
+    <div class="result-list" id="group-list"></div>
+    <div style="border-top:1px solid #eee; padding-top:12px; margin-top:8px;">
+      <div class="section-title">创建新群</div>
+      <input id="grp-name" placeholder="群名称">
+      <input id="grp-notice" placeholder="群公告 (可选)">
+      <button class="btn-ok" style="width:100%" onclick="doCreateGroup()">创建群聊</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-groups')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Profile Modal ============ -->
+<div class="modal-mask" id="modal-profile">
+  <div class="modal">
+    <h3>个人信息</h3>
+    <input id="prof-nick" placeholder="昵称">
+    <input id="prof-email" placeholder="邮箱 (可选)">
+    <input id="prof-sign" placeholder="个性签名 (可选)">
+    <select id="prof-gender">
+      <option value="">不修改性别</option>
+      <option value="0">男</option>
+      <option value="1">女</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-profile')">取消</button>
+      <button class="btn-ok" onclick="doUpdateProfile()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Group Info Modal ============ -->
+<div class="modal-mask" id="modal-group-info">
+  <div class="modal">
+    <h3 id="gi-title">群详情</h3>
+    <div id="gi-info" style="margin-bottom:12px;"></div>
+    <div class="section-title">群成员</div>
+    <div class="result-list" id="gi-members"></div>
+    <div id="gi-owner-actions" style="display:none; border-top:1px solid #eee; padding-top:12px; margin-top:8px;">
+      <div class="section-title">邀请成员 (UUID)</div>
+      <div class="search-row">
+        <input id="gi-invite-id" placeholder="用户UUID">
+        <button class="btn-ok" onclick="doInviteMember()">邀请</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-group-info')">关闭</button>
+      <button class="btn-ok" style="background:#e74c3c" onclick="doLeaveGroup()">退出群聊</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// Config - 固定指向 Go 后端地址
+// ================================================================
+const BASE = 'http://localhost:8080';
+const API  = BASE + '/api/v1';
+const WS_URL = 'ws://localhost:8080/ws';
+
+// ================================================================
+// State
+// ================================================================
+let token = '';
+let userInfo = null;   // { uuid, nickname, avatar, signature }
+let ws = null;
+let seqCounter = 0;
+let sessions = [];
+let currentSession = null;
+let pingTimer = null;
+let lastSentMsgUuid = '';
+
+// ================================================================
+// Helpers
+// ================================================================
+function $(id) { return document.getElementById(id); }
+function nextSeq() { return 'seq_' + (++seqCounter) + '_' + Date.now(); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(API + path, opts).then(r => r.json()).catch(e => ({ code: -1, msg: e.message }));
+}
+
+function closeModal(id) { $(id).classList.remove('show'); }
+function openModal(id) { $(id).classList.add('show'); }
+
+// ================================================================
+// 1. Auth: POST /auth/register, POST /auth/login, POST /auth/logout
+// ================================================================
+let isRegMode = false;
+function toggleRegister() {
+  isRegMode = !isRegMode;
+  $('inp-nick').style.display = isRegMode ? '' : 'none';
+  $('inp-cpwd').style.display = isRegMode ? '' : 'none';
+  $('btn-register').textContent = isRegMode ? '返回登录' : '注 册';
+  $('btn-login').textContent = isRegMode ? '注 册' : '登 录';
+  $('login-error').textContent = '';
+  $('login-error').style.color = '#e74c3c';
+}
+
+async function doLogin() {
+  const tel = $('inp-tel').value.trim();
+  const pwd = $('inp-pwd').value;
+  $('login-error').textContent = '';
+  $('login-error').style.color = '#e74c3c';
+
+  if (isRegMode) {
+    const nick = $('inp-nick').value.trim();
+    const cpwd = $('inp-cpwd').value;
+    if (!tel || !pwd || !nick || !cpwd) { $('login-error').textContent = '请填写所有字段'; return; }
+    if (pwd !== cpwd) { $('login-error').textContent = '两次密码不一致'; return; }
+    // POST /auth/register { telephone, password, confirm_password, nickname }
+    const res = await api('POST', '/auth/register', { telephone: tel, password: pwd, confirm_password: cpwd, nickname: nick });
+    if (res.code !== 0) { $('login-error').textContent = res.msg; return; }
+    $('login-error').style.color = '#07c160';
+    $('login-error').textContent = '注册成功，请登录';
+    toggleRegister();
+    return;
+  }
+
+  if (!tel || !pwd) { $('login-error').textContent = '请输入手机号和密码'; return; }
+  // POST /auth/login { telephone, password } => { token, user_info: { uuid, nickname, avatar, signature } }
+  const res = await api('POST', '/auth/login', { telephone: tel, password: pwd });
+  if (res.code !== 0) { $('login-error').textContent = res.msg; return; }
+  token = res.data.token;
+  userInfo = res.data.user_info;
+  enterChat();
+}
+
+async function doLogout() {
+  // POST /auth/logout
+  await api('POST', '/auth/logout');
+  token = '';
+  userInfo = null;
+  if (ws) ws.close();
+  $('login-page').style.display = 'flex';
+  $('chat-page').style.display = 'none';
+}
+
+function enterChat() {
+  $('login-page').style.display = 'none';
+  $('chat-page').style.display = 'flex';
+  $('user-nickname').textContent = userInfo.nickname || userInfo.uuid;
+  connectWS();
+  loadSessions();
+}
+
+// ================================================================
+// 2. WebSocket: GET /ws?token=xxx
+//    cmd: 1001 Ping, 1002 Pong, 2001 ChatUp, 2002 ChatAck, 2003 ChatPush, 3001 SystemEvent
+// ================================================================
+function connectWS() {
+  if (ws) ws.close();
+  ws = new WebSocket(WS_URL + '?token=' + encodeURIComponent(token));
+
+  ws.onopen = () => {
+    $('ws-status').textContent = 'WebSocket 已连接';
+    $('ws-status').className = 'ws-open';
+    wsLog('open', 'Connected');
+    pingTimer = setInterval(() => {
+      if (ws && ws.readyState === 1) {
+        const msg = { cmd: 1001, seq: nextSeq() };
+        ws.send(JSON.stringify(msg));
+        wsLog('out', JSON.stringify(msg));
+      }
+    }, 50000);
+  };
+
+  ws.onmessage = (e) => {
+    wsLog('in', e.data);
+    const parts = e.data.split('\n');
+    for (const part of parts) {
+      if (!part.trim()) continue;
+      try { handleWSMessage(JSON.parse(part)); }
+      catch (err) { wsLog('err', 'Parse: ' + err.message); }
+    }
+  };
+
+  ws.onclose = () => {
+    $('ws-status').textContent = 'WebSocket 已断开';
+    $('ws-status').className = 'ws-closed';
+    wsLog('err', 'Disconnected');
+    clearInterval(pingTimer);
+  };
+
+  ws.onerror = () => wsLog('err', 'WebSocket error');
+}
+
+function handleWSMessage(msg) {
+  switch (msg.cmd) {
+    case 1002:
+      wsLog('cmd', 'Pong: ' + msg.seq);
+      break;
+    case 2002:
+      wsLog('cmd', 'ACK: ' + JSON.stringify(msg.data));
+      break;
+    case 2003: {
+      // ChatPush: incoming message => MessageVO
+      const data = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+      wsLog('cmd', 'Push: ' + JSON.stringify(data));
+      if (currentSession && data.session_id === currentSession.uuid) {
+        appendMsg(data, false);
+      }
+      loadSessions();
+      break;
+    }
+    case 3001: {
+      const data = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+      wsLog('cmd', 'Event: ' + JSON.stringify(data));
+      if (currentSession) appendSystemMsg(data.message || JSON.stringify(data));
+      break;
+    }
+    default:
+      wsLog('cmd', 'Unknown cmd=' + msg.cmd);
+  }
+}
+
+function wsLog(type, text) {
+  const el = $('log-content');
+  const cls = { in:'log-in', out:'log-out', err:'log-err', cmd:'log-cmd', open:'log-cmd' }[type] || '';
+  const prefix = { in:'<<', out:'>>', err:'!!', cmd:'##', open:'++' }[type] || '--';
+  const t = new Date().toLocaleTimeString();
+  el.innerHTML += `<div class="log-entry"><span class="${cls}">[${t}] ${prefix} ${escHtml(text)}</span></div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function toggleLog() { $('log-panel').classList.toggle('show'); }
+
+// ================================================================
+// 3. Sessions: GET /sessions, POST /sessions, DELETE /sessions/:uuid
+//    PUT /sessions/:uuid/top, PUT /sessions/:uuid/read
+// ================================================================
+async function loadSessions() {
+  // GET /sessions?page=1&size=50 => { total, list: SessionVO[] }
+  const res = await api('GET', '/sessions?page=1&size=50');
+  if (res.code !== 0) return;
+  sessions = (res.data && res.data.list) || [];
+  renderSessions();
+}
+
+function renderSessions() {
+  const el = $('session-list');
+  if (!sessions.length) { el.innerHTML = '<div class="result-empty">暂无会话</div>'; return; }
+  el.innerHTML = sessions.map(s => {
+    const isActive = currentSession && currentSession.uuid === s.uuid;
+    const initial = (s.target_name || '?')[0].toUpperCase();
+    const isGroup = s.session_type === 1;
+    const time = s.last_message_at ? new Date(s.last_message_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="session-item ${isActive?'active':''}" onclick="selectSession('${s.uuid}')">
+      <div class="session-avatar ${isGroup?'group':''}">${escHtml(initial)}</div>
+      <div class="session-info">
+        <div class="session-name">${escHtml(s.target_name || s.target_id)}${isGroup?' [群]':''}</div>
+        <div class="session-last">${escHtml(s.last_message || '')}</div>
+      </div>
+      <div class="session-meta">
+        <div class="session-time">${time}</div>
+        ${s.unread_count > 0 ? `<div class="session-unread">${s.unread_count}</div>` : ''}
+        ${s.is_top ? '<div style="font-size:10px;color:#1890ff">置顶</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectSession(uuid) {
+  currentSession = sessions.find(s => s.uuid === uuid);
+  if (!currentSession) return;
+  renderSessions();
+  $('chat-placeholder').style.display = 'none';
+  $('chat-area').style.display = 'flex';
+  $('chat-target-name').textContent = currentSession.target_name || currentSession.target_id;
+  $('btn-pin').textContent = currentSession.is_top ? '取消置顶' : '置顶';
+  // PUT /sessions/:uuid/read
+  api('PUT', '/sessions/' + uuid + '/read');
+  await loadMessages(uuid);
+}
+
+async function pinCurrentSession() {
+  if (!currentSession) return;
+  const newTop = currentSession.is_top ? 0 : 1;
+  // PUT /sessions/:uuid/top { is_top: 0|1 }
+  const res = await api('PUT', '/sessions/' + currentSession.uuid + '/top', { is_top: newTop });
+  if (res.code !== 0) { alert(res.msg); return; }
+  currentSession.is_top = newTop;
+  $('btn-pin').textContent = newTop ? '取消置顶' : '置顶';
+  loadSessions();
+}
+
+async function deleteCurrentSession() {
+  if (!currentSession) return;
+  if (!confirm('确定删除该会话？')) return;
+  // DELETE /sessions/:uuid
+  const res = await api('DELETE', '/sessions/' + currentSession.uuid);
+  if (res.code !== 0) { alert(res.msg); return; }
+  currentSession = null;
+  $('chat-area').style.display = 'none';
+  $('chat-placeholder').style.display = 'flex';
+  loadSessions();
+}
+
+// ================================================================
+// 4. Messages: GET /messages, PUT /messages/:uuid/recall
+// ================================================================
+async function loadMessages(sessionId) {
+  const el = $('messages');
+  el.innerHTML = '';
+  // GET /messages?session_id=xxx&page=1&size=50 => { total, list: MessageVO[] }
+  const res = await api('GET', '/messages?session_id=' + sessionId + '&page=1&size=50');
+  if (res.code !== 0 || !res.data) return;
+  const list = res.data.list || [];
+  list.sort((a, b) => new Date(a.send_at) - new Date(b.send_at));
+  list.forEach(m => {
+    const isSent = m.send_id === userInfo.uuid;
+    appendMsg(m, isSent);
+  });
+  if (list.length) lastSentMsgUuid = list.filter(m => m.send_id === userInfo.uuid).pop()?.uuid || '';
+}
+
+function appendMsg(msg, isSent) {
+  const el = $('messages');
+  const time = msg.send_at ? new Date(msg.send_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+  const content = msg.status === 2 ? '[消息已撤回]' : (msg.content || msg.url || '[非文本消息]');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (isSent ? 'sent' : 'received');
+  div.dataset.uuid = msg.uuid || '';
+  div.innerHTML = `${escHtml(content)}<div class="msg-time">${time}</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendSystemMsg(text) {
+  const el = $('messages');
+  const div = document.createElement('div');
+  div.className = 'msg system';
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function recallLastMsg() {
+  if (!lastSentMsgUuid) { alert('没有可撤回的消息'); return; }
+  // PUT /messages/:uuid/recall
+  const res = await api('PUT', '/messages/' + lastSentMsgUuid + '/recall');
+  if (res.code !== 0) { alert(res.msg); return; }
+  if (currentSession) loadMessages(currentSession.uuid);
+}
+
+// ================================================================
+// 5. Send Message via WebSocket: cmd 2001
+// ================================================================
+function sendMsg() {
+  const input = $('msg-input');
+  const text = input.value.trim();
+  if (!text || !currentSession || !ws || ws.readyState !== 1) return;
+
+  const payload = {
+    cmd: 2001,
+    seq: nextSeq(),
+    data: {
+      session_type: currentSession.session_type,
+      receive_id: currentSession.target_id,
+      type: 0,
+      content: text,
+      url: ''
+    }
+  };
+
+  ws.send(JSON.stringify(payload));
+  wsLog('out', JSON.stringify(payload));
+  appendMsg({ content: text, send_id: userInfo.uuid, send_at: new Date().toISOString() }, true);
+  input.value = '';
+}
+
+// ================================================================
+// 6. Search Users: GET /users?keyword=xxx&page=1&size=20
+//    Also: GET /users/:uuid, GET /users/me, PUT /users/me
+// ================================================================
+function showSearchUser() {
+  $('search-kw').value = '';
+  $('search-results').style.display = 'none';
+  openModal('modal-search');
+}
+
+async function doSearchUser() {
+  const kw = $('search-kw').value.trim();
+  if (!kw) return;
+  // GET /users?keyword=xxx&page=1&size=20 => { total, list: UserProfileResp[] }
+  const res = await api('GET', '/users?keyword=' + encodeURIComponent(kw) + '&page=1&size=20');
+  const el = $('search-results');
+  el.style.display = 'block';
+  if (res.code !== 0 || !res.data || !res.data.list || !res.data.list.length) {
+    el.innerHTML = '<div class="result-empty">未找到用户</div>';
+    return;
+  }
+  el.innerHTML = res.data.list
+    .filter(u => u.uuid !== userInfo.uuid)
+    .map(u => `<div class="result-item">
+      <div class="info"><strong>${escHtml(u.nickname)}</strong><br><small>${escHtml(u.telephone)}</small></div>
+      <div>
+        <button onclick="startChatWith('${u.uuid}')">聊天</button>
+        <button onclick="applyFriend('${u.uuid}','${escHtml(u.nickname)}')" style="background:#1890ff;margin-left:4px">加好友</button>
+      </div>
+    </div>`).join('');
+}
+
+async function startChatWith(targetUuid) {
+  // POST /sessions { target_id, session_type: 0 } => { uuid }
+  const res = await api('POST', '/sessions', { target_id: targetUuid, session_type: 0 });
+  if (res.code !== 0) { alert(res.msg); return; }
+  closeModal('modal-search');
+  await loadSessions();
+  if (res.data && res.data.uuid) selectSession(res.data.uuid);
+}
+
+function applyFriend(uuid, nickname) {
+  closeModal('modal-search');
+  pendingApplyTarget = uuid;
+  $('apply-target-name').textContent = nickname;
+  $('apply-send-form').style.display = 'block';
+  $('apply-msg').value = '';
+  openModal('modal-apply');
+  loadReceivedApplies();
+}
+
+// ================================================================
+// 7. Profile: GET /users/me, PUT /users/me
+// ================================================================
+async function showProfile() {
+  // GET /users/me => UserProfileResp
+  const res = await api('GET', '/users/me');
+  if (res.code !== 0) { alert(res.msg); return; }
+  const u = res.data;
+  $('prof-nick').value = u.nickname || '';
+  $('prof-email').value = u.email || '';
+  $('prof-sign').value = u.signature || '';
+  $('prof-gender').value = '';
+  openModal('modal-profile');
+}
+
+async function doUpdateProfile() {
+  const data = {};
+  const nick = $('prof-nick').value.trim();
+  const email = $('prof-email').value.trim();
+  const sign = $('prof-sign').value.trim();
+  const gender = $('prof-gender').value;
+  if (nick) data.nickname = nick;
+  if (email) data.email = email;
+  if (sign) data.signature = sign;
+  if (gender !== '') data.gender = parseInt(gender);
+  // PUT /users/me { nickname?, email?, avatar?, gender?, signature? }
+  const res = await api('PUT', '/users/me', data);
+  if (res.code !== 0) { alert(res.msg); return; }
+  if (nick) { userInfo.nickname = nick; $('user-nickname').textContent = nick; }
+  closeModal('modal-profile');
+}
+
+// ================================================================
+// 8. Contacts: GET /contacts, DELETE /contacts/:uuid
+//    POST /contacts/:uuid/block, DELETE /contacts/:uuid/block
+// ================================================================
+async function loadContacts() {
+  // GET /contacts => { total, list: ContactVO[] }
+  const res = await api('GET', '/contacts');
+  const el = $('contact-list');
+  if (res.code !== 0 || !res.data) {
+    el.innerHTML = '<div class="result-empty">加载失败</div>';
+    openModal('modal-contacts'); return;
+  }
+  const list = res.data.list || [];
+  if (!list.length) {
+    el.innerHTML = '<div class="result-empty">暂无联系人</div>';
+  } else {
+    const statusText = { 0:'正常', 1:'已拉黑', 2:'被拉黑', 3:'已删除', 4:'被删除' };
+    el.innerHTML = list.map(c => `<div class="result-item">
+      <div class="info">
+        <strong>${escHtml(c.nickname || c.contact_id)}</strong>
+        ${c.status !== 0 ? `<span style="color:#e74c3c;font-size:11px;margin-left:4px">[${statusText[c.status]||''}]</span>` : ''}
+      </div>
+      <div>
+        <button onclick="quickChat('${c.contact_id}')">聊天</button>
+        ${c.status === 0 ? `<button class="danger" onclick="blockContact('${c.contact_id}')" style="margin-left:4px">拉黑</button>` : ''}
+        ${c.status === 1 ? `<button onclick="unblockContact('${c.contact_id}')" style="margin-left:4px;background:#1890ff">解除拉黑</button>` : ''}
+        ${c.status === 0 ? `<button class="danger" onclick="deleteContact('${c.contact_id}')" style="margin-left:4px">删除</button>` : ''}
+      </div>
+    </div>`).join('');
+  }
+  openModal('modal-contacts');
+}
+
+async function quickChat(contactId) {
+  closeModal('modal-contacts');
+  const res = await api('POST', '/sessions', { target_id: contactId, session_type: 0 });
+  if (res.code !== 0) { alert(res.msg); return; }
+  await loadSessions();
+  if (res.data && res.data.uuid) selectSession(res.data.uuid);
+}
+
+async function blockContact(uuid) {
+  if (!confirm('确定拉黑该好友？')) return;
+  // POST /contacts/:uuid/block
+  const res = await api('POST', '/contacts/' + uuid + '/block');
+  if (res.code !== 0) { alert(res.msg); return; }
+  loadContacts();
+}
+
+async function unblockContact(uuid) {
+  // DELETE /contacts/:uuid/block
+  const res = await api('DELETE', '/contacts/' + uuid + '/block');
+  if (res.code !== 0) { alert(res.msg); return; }
+  loadContacts();
+}
+
+async function deleteContact(uuid) {
+  if (!confirm('确定删除该好友？')) return;
+  // DELETE /contacts/:uuid
+  const res = await api('DELETE', '/contacts/' + uuid);
+  if (res.code !== 0) { alert(res.msg); return; }
+  loadContacts();
+}
+
+// ================================================================
+// 9. Applications: GET /applications, POST /applications, PUT /applications/:uuid
+// ================================================================
+let pendingApplyTarget = '';
+
+function showApplies() {
+  $('apply-kw').value = '';
+  $('apply-search-results').style.display = 'none';
+  $('apply-send-form').style.display = 'none';
+  openModal('modal-apply');
+  loadReceivedApplies();
+}
+
+async function doSearchForApply() {
+  const kw = $('apply-kw').value.trim();
+  if (!kw) return;
+  const res = await api('GET', '/users?keyword=' + encodeURIComponent(kw) + '&page=1&size=20');
+  const el = $('apply-search-results');
+  el.style.display = 'block';
+  if (res.code !== 0 || !res.data || !res.data.list || !res.data.list.length) {
+    el.innerHTML = '<div class="result-empty">未找到用户</div>';
+    return;
+  }
+  el.innerHTML = res.data.list
+    .filter(u => u.uuid !== userInfo.uuid)
+    .map(u => `<div class="result-item">
+      <div class="info"><strong>${escHtml(u.nickname)}</strong><br><small>${escHtml(u.telephone)}</small></div>
+      <button onclick="selectApplyTarget('${u.uuid}','${escHtml(u.nickname)}')">加好友</button>
+    </div>`).join('');
+}
+
+function selectApplyTarget(uuid, nickname) {
+  pendingApplyTarget = uuid;
+  $('apply-target-name').textContent = nickname;
+  $('apply-send-form').style.display = 'block';
+  $('apply-msg').value = '';
+}
+
+async function doSubmitApply() {
+  if (!pendingApplyTarget) return;
+  // POST /applications { contact_id, contact_type: 0, message }
+  const res = await api('POST', '/applications', {
+    contact_id: pendingApplyTarget,
+    contact_type: 0,
+    message: $('apply-msg').value.trim()
+  });
+  if (res.code !== 0) { alert(res.msg); return; }
+  alert('好友申请已发送');
+  $('apply-send-form').style.display = 'none';
+  $('apply-search-results').style.display = 'none';
+  $('apply-kw').value = '';
+  pendingApplyTarget = '';
+}
+
+async function loadReceivedApplies() {
+  // GET /applications => { total, list: ApplicationVO[] }
+  const res = await api('GET', '/applications');
+  const el = $('apply-received-list');
+  if (res.code !== 0 || !res.data) { el.innerHTML = ''; return; }
+  const list = res.data.list || [];
+  const st = { 0:'待处理', 1:'已通过', 2:'已拒绝', 3:'已拉黑' };
+  if (!list.length) { el.innerHTML = '<div class="result-empty">暂无收到的申请</div>'; return; }
+  el.innerHTML = list.map(a => `<div class="result-item" style="flex-direction:column;align-items:stretch;">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="info"><strong>${escHtml(a.nickname || a.user_id)}</strong>
+        <span style="color:#999;font-size:11px;margin-left:4px">${a.contact_type===0?'加好友':'加群'}</span></div>
+      <span style="font-size:11px;color:#999">${st[a.status]||a.status}</span>
+    </div>
+    <div style="font-size:12px;color:#666;margin:4px 0">${escHtml(a.message || '无留言')}</div>
+    ${a.status === 0 ? `<div style="display:flex;gap:4px;margin-top:4px">
+      <button onclick="handleApply('${a.uuid}',1)" style="flex:1;padding:4px;background:#07c160;color:#fff;border:none;border-radius:3px;cursor:pointer">同意</button>
+      <button onclick="handleApply('${a.uuid}',2)" style="flex:1;padding:4px;background:#e74c3c;color:#fff;border:none;border-radius:3px;cursor:pointer">拒绝</button>
+    </div>` : ''}
+  </div>`).join('');
+}
+
+async function handleApply(uuid, status) {
+  // PUT /applications/:uuid { status: 1|2|3 }
+  const res = await api('PUT', '/applications/' + uuid, { status: status });
+  if (res.code !== 0) { alert(res.msg); return; }
+  loadReceivedApplies();
+}
+
+// ================================================================
+// 10. Groups: POST /groups, GET /groups/joined, GET /groups/:uuid
+//     PUT /groups/:uuid, DELETE /groups/:uuid
+//     GET /groups/:uuid/members, POST /groups/:uuid/members
+//     DELETE /groups/:uuid/members/me, DELETE /groups/:uuid/members/:user_id
+// ================================================================
+async function showGroups() {
+  // GET /groups/joined => { total, list: GroupVO[] }
+  const res = await api('GET', '/groups/joined');
+  const el = $('group-list');
+  if (res.code !== 0 || !res.data) {
+    el.innerHTML = '<div class="result-empty">加载失败</div>';
+    openModal('modal-groups'); return;
+  }
+  const list = res.data.list || [];
+  if (!list.length) { el.innerHTML = '<div class="result-empty">暂未加入群聊</div>'; }
+  else {
+    el.innerHTML = list.map(g => `<div class="result-item">
+      <div class="info"><strong>${escHtml(g.name)}</strong><br><small>${g.member_cnt}人</small></div>
+      <div>
+        <button onclick="openGroupChat('${g.uuid}')">聊天</button>
+        <button onclick="showGroupInfo('${g.uuid}')" style="background:#1890ff;margin-left:4px">详情</button>
+      </div>
+    </div>`).join('');
+  }
+  openModal('modal-groups');
+}
+
+async function doCreateGroup() {
+  const name = $('grp-name').value.trim();
+  if (!name) { alert('请输入群名称'); return; }
+  // POST /groups { name, notice?, avatar?, add_mode?, members? }
+  const body = { name };
+  const notice = $('grp-notice').value.trim();
+  if (notice) body.notice = notice;
+  const res = await api('POST', '/groups', body);
+  if (res.code !== 0) { alert(res.msg); return; }
+  alert('群聊创建成功');
+  $('grp-name').value = '';
+  $('grp-notice').value = '';
+  showGroups();
+}
+
+async function openGroupChat(groupUuid) {
+  closeModal('modal-groups');
+  // POST /sessions { target_id: groupUuid, session_type: 1 }
+  const res = await api('POST', '/sessions', { target_id: groupUuid, session_type: 1 });
+  if (res.code !== 0) { alert(res.msg); return; }
+  await loadSessions();
+  if (res.data && res.data.uuid) selectSession(res.data.uuid);
+}
+
+let currentGroupUuid = '';
+
+async function showGroupInfo(uuid) {
+  currentGroupUuid = uuid;
+  closeModal('modal-groups');
+  // GET /groups/:uuid => GroupVO
+  const gRes = await api('GET', '/groups/' + uuid);
+  if (gRes.code !== 0) { alert(gRes.msg); return; }
+  const g = gRes.data;
+  $('gi-title').textContent = g.name;
+  $('gi-info').innerHTML = `<div style="font-size:13px;color:#666;">
+    <p>群公告: ${escHtml(g.notice || '无')}</p>
+    <p>成员数: ${g.member_cnt} | 加群模式: ${g.add_mode === 0 ? '自由加入' : '需要审批'}</p>
+    <p>群主: ${escHtml(g.owner_id)}</p>
+  </div>`;
+  $('gi-owner-actions').style.display = g.owner_id === userInfo.uuid ? 'block' : 'none';
+
+  // GET /groups/:uuid/members => { total, list: GroupMemberVO[] }
+  const mRes = await api('GET', '/groups/' + uuid + '/members');
+  const el = $('gi-members');
+  if (mRes.code !== 0 || !mRes.data) { el.innerHTML = '<div class="result-empty">加载失败</div>'; }
+  else {
+    const members = mRes.data.list || [];
+    const isOwner = g.owner_id === userInfo.uuid;
+    el.innerHTML = members.map(m => `<div class="result-item">
+      <div class="info"><strong>${escHtml(m.nickname)}</strong><br><small>${m.uuid}</small></div>
+      ${isOwner && m.uuid !== userInfo.uuid ? `<button class="danger" onclick="kickMember('${uuid}','${m.uuid}')">踢出</button>` : ''}
+    </div>`).join('');
+  }
+  openModal('modal-group-info');
+}
+
+async function doInviteMember() {
+  const uid = $('gi-invite-id').value.trim();
+  if (!uid) return;
+  // POST /groups/:uuid/members { user_ids: [uuid] }
+  const res = await api('POST', '/groups/' + currentGroupUuid + '/members', { user_ids: [uid] });
+  if (res.code !== 0) { alert(res.msg); return; }
+  $('gi-invite-id').value = '';
+  showGroupInfo(currentGroupUuid);
+}
+
+async function kickMember(groupUuid, userId) {
+  if (!confirm('确定踢出该成员？')) return;
+  // DELETE /groups/:uuid/members/:user_id
+  const res = await api('DELETE', '/groups/' + groupUuid + '/members/' + userId);
+  if (res.code !== 0) { alert(res.msg); return; }
+  showGroupInfo(groupUuid);
+}
+
+async function doLeaveGroup() {
+  if (!confirm('确定退出该群聊？')) return;
+  // DELETE /groups/:uuid/members/me
+  const res = await api('DELETE', '/groups/' + currentGroupUuid + '/members/me');
+  if (res.code !== 0) { alert(res.msg); return; }
+  closeModal('modal-group-info');
+  loadSessions();
+}
+</script>
+</body>
+</html>

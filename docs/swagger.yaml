@@ -1,0 +1,1495 @@
+basePath: /api/v1
+definitions:
+  response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      msg:
+        type: string
+    type: object
+  types.ApplicationVO:
+    properties:
+      avatar:
+        description: 申请人的头像
+        type: string
+      contact_id:
+        description: 目标ID (用户ID 或 群ID)
+        type: string
+      contact_type:
+        description: 0.用户，1.群聊
+        type: integer
+      last_apply_at:
+        description: 最后申请时间
+        type: string
+      message:
+        description: 留言信息
+        type: string
+      nickname:
+        description: 申请人的昵称 (需要连表查 User)
+        type: string
+      status:
+        description: 0.待处理, 1.已通过, 2.已拒绝, 3.拉黑
+        type: integer
+      user_id:
+        description: 申请人的 UUID
+        type: string
+      uuid:
+        type: string
+    type: object
+  types.CancelAccountDeletionReq:
+    properties:
+      password:
+        maxLength: 20
+        minLength: 6
+        type: string
+    required:
+    - password
+    type: object
+  types.ChangeTelephoneReq:
+    properties:
+      new_telephone:
+        type: string
+      password:
+        maxLength: 20
+        minLength: 6
+        type: string
+      verify_code:
+        type: string
+    required:
+    - new_telephone
+    - password
+    - verify_code
+    type: object
+  types.ContactVO:
+    properties:
+      avatar:
+        type: string
+      contact_id:
+        type: string
+      nickname:
+        type: string
+      signature:
+        type: string
+      status:
+        description: 0.正常, 1.拉黑 等等
+        type: integer
+    type: object
+  types.CreateGroupReq:
+    properties:
+      add_mode:
+        enum:
+        - 0
+        - 1
+        type: integer
+      avatar:
+        type: string
+      members:
+        items:
+          type: string
+        type: array
+      name:
+        maxLength: 20
+        type: string
+      notice:
+        maxLength: 500
+        type: string
+    required:
+    - members
+    - name
+    type: object
+  types.CreateGroupResp:
+    properties:
+      uuid:
+        type: string
+    type: object
+  types.CreateSessionReq:
+    properties:
+      session_type:
+        enum:
+        - 0
+        - 1
+        type: integer
+      target_id:
+        type: string
+    required:
+    - target_id
+    type: object
+  types.CreateSessionResp:
+    properties:
+      uuid:
+        type: string
+    type: object
+  types.GetApplicationListResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.ApplicationVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetContactListResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.ContactVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetGroupMembersResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.GroupMemberVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetJoinedGroupsResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.GroupVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetMessageListResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.MessageVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetSessionListResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.SessionVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetUserListResp:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/types.UserProfileResp'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GroupMemberVO:
+    properties:
+      avatar:
+        type: string
+      nickname:
+        type: string
+      signature:
+        type: string
+      uuid:
+        type: string
+    type: object
+  types.GroupVO:
+    properties:
+      add_mode:
+        type: integer
+      avatar:
+        type: string
+      member_cnt:
+        type: integer
+      name:
+        type: string
+      notice:
+        type: string
+      owner_id:
+        type: string
+      status:
+        type: integer
+      uuid:
+        type: string
+    type: object
+  types.HandleApplicationReq:
+    properties:
+      status:
+        description: 1:同意 2:拒绝 3:拉黑
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
+    required:
+    - status
+    type: object
+  types.InviteMemberReq:
+    properties:
+      user_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - user_ids
+    type: object
+  types.LoginReq:
+    properties:
+      password:
+        type: string
+      telephone:
+        type: string
+    required:
+    - password
+    - telephone
+    type: object
+  types.LoginResp:
+    properties:
+      token:
+        type: string
+      user_info:
+        $ref: '#/definitions/types.UserVO'
+    type: object
+  types.MessageVO:
+    properties:
+      av_data:
+        type: string
+      content:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      file_type:
+        type: string
+      receive_id:
+        type: string
+      send_at:
+        type: string
+      send_id:
+        type: string
+      session_id:
+        type: string
+      status:
+        type: integer
+      type:
+        type: integer
+      url:
+        type: string
+      uuid:
+        type: string
+    type: object
+  types.PinSessionReq:
+    properties:
+      is_top:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - is_top
+    type: object
+  types.RegisterReq:
+    properties:
+      confirm_password:
+        type: string
+      nickname:
+        maxLength: 20
+        type: string
+      password:
+        maxLength: 20
+        minLength: 6
+        type: string
+      telephone:
+        description: 根据你的表结构，使用 Telephone 作为主账号
+        type: string
+    required:
+    - confirm_password
+    - nickname
+    - password
+    - telephone
+    type: object
+  types.RequestAccountDeletionReq:
+    properties:
+      password:
+        maxLength: 20
+        minLength: 6
+        type: string
+    required:
+    - password
+    type: object
+  types.SessionVO:
+    properties:
+      is_top:
+        type: integer
+      last_message:
+        type: string
+      last_message_at:
+        type: string
+      session_type:
+        type: integer
+      target_avatar:
+        type: string
+      target_id:
+        type: string
+      target_name:
+        type: string
+      unread_count:
+        type: integer
+      uuid:
+        type: string
+    type: object
+  types.SetUserRoleReq:
+    properties:
+      is_admin:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - is_admin
+    type: object
+  types.SetUserStatusReq:
+    properties:
+      status:
+        description: 0.正常，1.禁用 (pointer to avoid default zero value)
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - status
+    type: object
+  types.SubmitApplicationReq:
+    properties:
+      contact_id:
+        type: string
+      contact_type:
+        enum:
+        - 0
+        - 1
+        type: integer
+      message:
+        maxLength: 100
+        type: string
+    required:
+    - contact_id
+    type: object
+  types.UpdateGroupReq:
+    properties:
+      add_mode:
+        enum:
+        - 0
+        - 1
+        type: integer
+      avatar:
+        type: string
+      name:
+        maxLength: 20
+        type: string
+      notice:
+        maxLength: 500
+        type: string
+    type: object
+  types.UpdateProfileReq:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      gender:
+        enum:
+        - 0
+        - 1
+        type: integer
+      nickname:
+        maxLength: 20
+        type: string
+      signature:
+        maxLength: 100
+        type: string
+    type: object
+  types.UserProfileResp:
+    properties:
+      avatar:
+        type: string
+      birthday:
+        type: string
+      delete_after:
+        type: string
+      email:
+        type: string
+      gender:
+        type: integer
+      nickname:
+        type: string
+      signature:
+        type: string
+      telephone:
+        type: string
+      uuid:
+        type: string
+    type: object
+  types.UserVO:
+    properties:
+      avatar:
+        type: string
+      nickname:
+        type: string
+      signature:
+        type: string
+      uuid:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: WChat 即时通讯系统后端 API 文档
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: WChat API
+  version: "1.0"
+paths:
+  /applications:
+    get:
+      description: 获取当前用户收到的所有好友/群聊申请，包含申请人昵称、头像等信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取收到的申请列表
+      tags:
+      - 申请
+    post:
+      consumes:
+      - application/json
+      description: 向目标用户发送好友申请(contact_type=0)或向群聊发送加群申请(contact_type=1)，可附加留言
+      parameters:
+      - description: 申请参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.SubmitApplicationReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 不能添加自己 / 已经是好友 / 申请处理中
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 发起好友/群聊申请
+      tags:
+      - 申请
+  /applications/{uuid}:
+    put:
+      consumes:
+      - application/json
+      description: 对收到的申请进行处理：1=同意（自动建立双向好友关系）、2=拒绝、3=拉黑
+      parameters:
+      - description: 申请记录 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: '处理操作: 1=同意, 2=拒绝, 3=拉黑'
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.HandleApplicationReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 申请不存在 / 权限不足 / 已处理过
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 处理申请
+      tags:
+      - 申请
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 通过手机号和密码登录，验证成功后下发 JWT Token 及用户基本信息
+      parameters:
+      - description: 登录参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 账号或密码错误 / 账号被禁用
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: 用户登录
+      tags:
+      - 鉴权
+  /auth/logout:
+    post:
+      description: 登出当前账号，更新最后离线时间（后续可扩展 Token 黑名单机制）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 用户登出
+      tags:
+      - 鉴权
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 通过手机号、密码和昵称注册新账号
+      parameters:
+      - description: 注册参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.RegisterReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 手机号已注册
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: 用户注册
+      tags:
+      - 鉴权
+  /contacts:
+    get:
+      description: 获取当前用户的所有联系人（好友），包含昵称、头像、状态等信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取通讯录列表
+      tags:
+      - 联系人
+  /contacts/{uuid}:
+    delete:
+      description: 删除与目标用户的好友关系（双向更新状态：主动方=3，被动方=4）
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 好友关系不存在 / 不能操作自己
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 删除好友
+      tags:
+      - 联系人
+  /contacts/{uuid}/block:
+    delete:
+      description: 解除对目标用户的拉黑（双向恢复状态为 0=正常）
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 好友关系不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 解除拉黑
+      tags:
+      - 联系人
+    post:
+      description: 拉黑目标用户（双向更新状态：主动方=1，被动方=2）
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 好友关系不存在 / 不能操作自己
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 拉黑好友
+      tags:
+      - 联系人
+  /groups:
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的群聊，当前用户自动成为群主；可选择在创建时邀请初始成员
+      parameters:
+      - description: 群组信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateGroupReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 创建群聊
+      tags:
+      - 群组
+  /groups/{uuid}:
+    delete:
+      description: 群主解散群聊（仅群主有权限），解散后群内所有会话失效
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 权限不足 / 群不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 解散群聊
+      tags:
+      - 群组
+    get:
+      description: 根据群 UUID 获取群名称、公告、头像、成员数、群主、加群模式等信息
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取群详情
+      tags:
+      - 群组
+    put:
+      consumes:
+      - application/json
+      description: 群主修改群名称、公告、头像、加群模式等（仅传入需修改的字段）
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: 需要更新的字段
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateGroupReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 权限不足 / 群不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 修改群资料
+      tags:
+      - 群组
+  /groups/{uuid}/members:
+    get:
+      description: 获取指定群聊的所有成员，包含昵称、头像、签名等信息
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 群不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取群成员列表
+      tags:
+      - 群组
+    post:
+      consumes:
+      - application/json
+      description: 邀请一个或多个用户加入指定群聊
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: 被邀请的用户 UUID 列表
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.InviteMemberReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 群不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 邀请成员入群
+      tags:
+      - 群组
+  /groups/{uuid}/members/{user_id}:
+    delete:
+      description: 群主/管理员将指定用户从群聊中移除（不能踢自己）
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: 被踢用户 UUID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 权限不足 / 不能踢自己
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 踢出群成员
+      tags:
+      - 群组
+  /groups/{uuid}/members/me:
+    delete:
+      description: 当前用户主动退出指定群聊（群主不能退出，需先转让或解散）
+      parameters:
+      - description: 群 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 不在群中 / 群主不能退出
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 退出群聊
+      tags:
+      - 群组
+  /groups/joined:
+    get:
+      description: 获取当前用户已加入的所有群聊，包含群名、成员数、群主等信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取我加入的群列表
+      tags:
+      - 群组
+  /messages:
+    get:
+      description: 分页获取指定会话的历史消息，按发送时间倒序返回
+      parameters:
+      - description: 会话 UUID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      - description: 页码 (从1开始)
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取消息列表
+      tags:
+      - 消息
+  /messages/{uuid}/recall:
+    put:
+      description: 撤回自己发送的消息（将消息状态设为 2=已撤回），超时可能被拒绝
+      parameters:
+      - description: 消息 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 消息不存在 / 超时 / 非本人消息
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 撤回消息
+      tags:
+      - 消息
+  /sessions:
+    get:
+      description: 分页获取当前用户的聊天会话列表，包含对方名称、头像、最后消息、未读数等
+      parameters:
+      - description: 页码 (从1开始)
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取会话列表
+      tags:
+      - 会话
+    post:
+      consumes:
+      - application/json
+      description: 与目标用户或群组创建一个新会话（如果已存在则返回已有会话的 UUID）
+      parameters:
+      - description: 'target_id=对方UUID, session_type: 0=私聊, 1=群聊'
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSessionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 不能与自己发起会话 / 参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 创建会话
+      tags:
+      - 会话
+  /sessions/{uuid}:
+    delete:
+      description: 从当前用户的会话列表中删除指定会话
+      parameters:
+      - description: 会话 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 会话不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 删除会话
+      tags:
+      - 会话
+  /sessions/{uuid}/read:
+    put:
+      description: 将指定会话的未读消息数归零
+      parameters:
+      - description: 会话 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 会话不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 标记会话已读
+      tags:
+      - 会话
+  /sessions/{uuid}/top:
+    put:
+      consumes:
+      - application/json
+      description: 设置指定会话的置顶状态：1=置顶, 0=取消置顶
+      parameters:
+      - description: 会话 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: 'is_top: 0=取消置顶, 1=置顶'
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.PinSessionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 置顶/取消置顶会话
+      tags:
+      - 会话
+  /users:
+    get:
+      description: 分页获取用户列表，支持通过昵称或手机号进行模糊搜索
+      parameters:
+      - description: 页码 (从1开始)
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: size
+        required: true
+        type: integer
+      - description: 搜索关键词 (昵称或手机号)
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 搜索用户 / 获取用户列表
+      tags:
+      - 用户
+  /users/{uuid}:
+    delete:
+      description: 管理员操作：删除指定用户（不能删除自己）
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 权限不足 / 不能删除自己
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 删除用户
+      tags:
+      - 用户管理 (Admin)
+    get:
+      description: 根据用户 UUID 获取其公开资料
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取指定用户信息
+      tags:
+      - 用户
+  /users/{uuid}/role:
+    put:
+      consumes:
+      - application/json
+      description: 管理员操作：设置目标用户为普通用户(0)或管理员(1)
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: '角色值: 0=普通用户, 1=管理员'
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.SetUserRoleReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 权限不足 / 参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 设置用户角色
+      tags:
+      - 用户管理 (Admin)
+  /users/{uuid}/status:
+    put:
+      consumes:
+      - application/json
+      description: 管理员操作：设置目标用户的状态为正常(0)或禁用(1)
+      parameters:
+      - description: 目标用户 UUID
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: '状态值: 0=正常, 1=禁用'
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.SetUserStatusReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 权限不足 / 参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 启用/禁用用户
+      tags:
+      - 用户管理 (Admin)
+  /users/me:
+    get:
+      description: 根据 Token 中的用户 UUID 返回完整的个人资料
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token 无效 / 用户不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取我的个人信息
+      tags:
+      - 用户
+    put:
+      consumes:
+      - application/json
+      description: 修改当前用户的昵称、邮箱、头像、性别、个性签名等字段，仅传入需要修改的字段
+      parameters:
+      - description: 需要更新的字段
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateProfileReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 更新我的个人信息
+      tags:
+      - 用户
+  /users/me/delete-request:
+    delete:
+      consumes:
+      - application/json
+      description: 当前登录用户在冷静期内校验密码后取消注销申请，恢复账号正常状态
+      parameters:
+      - description: 取消注销参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.CancelAccountDeletionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 密码错误 / Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 取消账号注销申请
+      tags:
+      - 用户
+    post:
+      consumes:
+      - application/json
+      description: 当前登录用户提交注销申请，校验密码后进入注销冷静期，并使当前登录态失效
+      parameters:
+      - description: 注销申请参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.RequestAccountDeletionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 密码错误 / Token 无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 发起账号注销申请
+      tags:
+      - 用户
+  /users/me/phone/change:
+    post:
+      consumes:
+      - application/json
+      description: 当前登录用户校验密码和验证码后，将登录手机号迁移到新的手机号
+      parameters:
+      - description: 更换手机号参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/types.ChangeTelephoneReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 密码错误 / 手机号已存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 更换手机号
+      tags:
+      - 用户
+  /ws:
+    get:
+      description: 将 HTTP 连接升级为 WebSocket 长连接，用于实时消息推送和收发。
+      parameters:
+      - description: JWT Token
+        in: query
+        name: token
+        required: true
+        type: string
+      responses:
+        "101":
+          description: 协议升级成功，WebSocket 连接已建立
+        "200":
+          description: Token 无效 / Token 缺失
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: WebSocket 连接
+      tags:
+      - WebSocket
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

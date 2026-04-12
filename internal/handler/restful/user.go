@@ -1,4 +1,4 @@
-package handler
+package restful
 
 import (
 	"wchat/internal/types"
@@ -184,7 +184,9 @@ func (h *UserHandler) ChangeTelephone(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.ChangeTelephone(c.Request.Context(), uuid, req.Password, req.NewTelephone, req.VerifyCode); err != nil {
+	if err := h.svc.ChangeTelephone(
+		c.Request.Context(), uuid, req.Password, req.NewTelephone, req.VerifyCode,
+	); err != nil {
 		response.FailErr(c, err)
 		return
 	}

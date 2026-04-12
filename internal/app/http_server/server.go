@@ -9,10 +9,12 @@ import (
 	"wchat/internal/cache"
 	"wchat/internal/config"
 	"wchat/internal/handler"
+	"wchat/internal/handler/restful"
+	"wchat/internal/handler/websocket"
 	"wchat/internal/repository"
 	"wchat/internal/router"
 	"wchat/internal/service"
-	"wchat/internal/websocket"
+	ws "wchat/internal/websocket"
 	"wchat/pkg/zlog"
 
 	"go.uber.org/zap"
@@ -92,20 +94,24 @@ func NewServer() (h *Server) {
 	messageService := service.NewMessageService(messageRepo, sessionRepo, contactRepo, groupRepo)
 	sessionService := service.NewSessionService(sessionRepo, userRepo, groupRepo)
 	accountLifecycleService := service.NewAccountLifecycleService(userRepo, txManager)
-	webSocketService := websocket.NewWebsocketService(messageService, sessionService)
+	webSocketService := ws.NewWebsocketService(messageService, sessionService)
 
 	// ==============================
-	// init handler
+	// init restful
 	// ==============================
 	app := &handler.App{
-		Auth:        handler.NewAuthHandler(authService),
-		User:        handler.NewUserHandler(userService),
-		Contact:     handler.NewContactHandler(contactService),
-		Group:       handler.NewGroupHandler(groupService),
-		Application: handler.NewApplicationHandler(applicationService),
-		Session:     handler.NewSessionHandler(sessionService),
-		Message:     handler.NewMessageHandler(messageService),
-		WebSocket:   handler.NewWebsocketHandler(webSocketService, authService),
+		Restful: handler.Restful{
+			Auth:        restful.NewAuthHandler(authService),
+			User:        restful.NewUserHandler(userService),
+			Contact:     restful.NewContactHandler(contactService),
+			Group:       restful.NewGroupHandler(groupService),
+			Application: restful.NewApplicationHandler(applicationService),
+			Session:     restful.NewSessionHandler(sessionService),
+			Message:     restful.NewMessageHandler(messageService),
+		},
+		WebSocket: handler.WebSocket{
+			WS: websocket.NewWebsocketHandler(webSocketService, authService),
+		},
 	}
 
 	// html template pre-compile

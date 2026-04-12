@@ -1,0 +1,34 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wchat-mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: wchat123
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: wchat
+      MYSQL_USER: wchat_user
+      MYSQL_PASSWORD: wchat123
+    volumes:
+      - wchat-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uwchat_user", "-pwchat123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: wchat-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - wchat-redis-data:/data
+
+volumes:
+  wchat-mysql-data:
+  wchat-redis-data:

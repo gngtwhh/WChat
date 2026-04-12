@@ -1,11 +1,12 @@
 package router
 
 import (
+	"wchat/internal/handler"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"wchat/internal/config"
-	"wchat/internal/handler"
 	"wchat/internal/middleware"
 	"wchat/internal/service"
 )
@@ -30,7 +31,7 @@ func LoadRouters(app *handler.App, authSvc *service.AuthService) *gin.Engine {
 	// WebSocket connection
 	// 客户端连接示例: ws://localhost:8080/ws?token=xxx
 	// ==========================================
-	r.GET("/ws", app.WebSocket.WsHandler)
+	r.GET("/ws", app.WS.WsHandler)
 
 	api := r.Group("/api/v1")
 

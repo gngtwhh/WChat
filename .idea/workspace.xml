@@ -4,53 +4,27 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="207e64f0-a175-419c-b840-4a43e0a83c4b" name="更改" comment="">
+    <list default="true" id="207e64f0-a175-419c-b840-4a43e0a83c4b" name="更改" comment="Update: Reconstruct the project">
+      <change afterPath="$PROJECT_DIR$/internal/handler/app.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handler/restful/application.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handler/restful/contact.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handler/restful/message.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handler/restful/session.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/configs/config.toml" beforeDir="false" afterPath="$PROJECT_DIR$/configs/config.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/app/http_server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/app/http_server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/cache/redis.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/cache/redis.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/application.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/application.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/contact.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/contact.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/group.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/message.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/message.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/websocket.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/middleware/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/middleware/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/model/chat_group.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/chat_group.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/model/contact.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/contact.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/model/contact_apply.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/contact_apply.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/model/message.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/message.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/model/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/model/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/model/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/chat_group_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/chat_group_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/contact_apply_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/contact_apply_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/contact_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/contact_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/message_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/message_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/session_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/session_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/repository/user_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/repository/user_repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/application.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/restful/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/contact.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/restful/group.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/handler.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/message.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/session.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/restful/user.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/websocket/websocket.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/middleware/log.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/middleware/log.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/router/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/router/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/application.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/application.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/contact.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/contact.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/group.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/message.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/message.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/service/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/service/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/websocket/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/websocket/client.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/websocket/dispatcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/websocket/dispatcher.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/websocket/hub.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/websocket/hub.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/websocket/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/websocket/websocket.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/blog.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/errcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/errcode/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/utils/jwt.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/utils/jwt.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -118,6 +92,11 @@
     &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;ChangesTree.GroupingKeys&quot;: [
+      &quot;repository&quot;
+    ]
   }
 }</component>
   <component name="RecentsManager">
@@ -128,6 +107,8 @@
       <recent name="D:\Data\code\Go\WChat\internal\service" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Data\code\Go\WChat\internal\handler" />
+      <recent name="D:\Data\code\Go\WChat\internal\http\websocket" />
       <recent name="D:\Data\code\Go\WChat\internal\websocket" />
       <recent name="D:\Data\code\Go\WChat\internal\app\http_server" />
     </key>
@@ -185,5 +166,7 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$" />
     </ignored-roots>
+    <MESSAGE value="Update: Reconstruct the project" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update: Reconstruct the project" />
   </component>
 </project>

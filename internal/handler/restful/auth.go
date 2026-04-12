@@ -1,4 +1,4 @@
-package handler
+package restful
 
 import (
 	"wchat/internal/types"
