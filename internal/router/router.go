@@ -27,12 +27,6 @@ func LoadRouters(app *handler.App, authSvc *service.AuthService) *gin.Engine {
 	// ==========================================
 	r.Static("/static", cfg.StaticSrcConfig.StaticFilePath)
 
-	// ==========================================
-	// WebSocket connection
-	// 客户端连接示例: ws://localhost:8080/ws?token=xxx
-	// ==========================================
-	r.GET("/ws", app.WS.WsHandler)
-
 	api := r.Group("/api/v1")
 
 	// ==========================================
@@ -145,6 +139,12 @@ func LoadRouters(app *handler.App, authSvc *service.AuthService) *gin.Engine {
 		// 	messages.GET("", app.Message.GetMessageList)
 		// 	messages.PUT("/:uuid/recall", app.Message.RecallMessage) // 操作 Status=2
 		// }
+
+		// ==========================================
+		// WebSocket connection
+		// 客户端连接示例: ws://localhost:8080/ws
+		// ==========================================
+		protected.GET("/ws", app.WS.WsUpgrade)
 	}
 
 	return r

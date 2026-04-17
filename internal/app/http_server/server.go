@@ -5,57 +5,35 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 	"wchat/internal/cache"
 	"wchat/internal/config"
 	"wchat/internal/handler"
 	"wchat/internal/handler/restful"
 	"wchat/internal/handler/websocket"
+	wshandler "wchat/internal/handler/websocket"
+	ws "wchat/internal/network/websocket"
 	"wchat/internal/repository"
 	"wchat/internal/router"
 	"wchat/internal/service"
-	ws "wchat/internal/websocket"
 	"wchat/pkg/zlog"
 
 	"go.uber.org/zap"
 )
 
 type Server struct {
-	httpServer       *http.Server
-	backgroundCancel context.CancelFunc
-	// chatWebSocketServer *ChatWebSocketServer
+	httpServer              *http.Server
+	accountLifecycleService *service.AccountLifecycleService
+	webSocketGateway        *ws.Gateway
+	lifecycleCtx            context.Context
+	lifecycleCancel         context.CancelFunc
+	runOnce                 sync.Once
+	shutdownOnce            sync.Once
 }
 
 func NewServer() (h *Server) {
 	cfg := config.GetConfig()
-
-	// ==============================
-	// utils
-	// ==============================
-	// jwt
-	// if err := utils.InitJwt(cfg.ServerConfig.JwtSecret); err != nil {
-	//     zlog.Error("failed to init jwt pkg", zap.Error(err))
-	//     panic(err)
-	// }
-
-	// sensitive words filter
-	// file, err := os.Open(cfg.ServerConfig.SensitiveWordsFile)
-	// if err != nil {
-	//     zlog.Error("failed to load sensitive words file", zap.Error(err))
-	//     panic(err)
-	// }
-	// defer file.Close()
-	//
-	// var words []string
-	// scanner := bufio.NewScanner(file)
-	// for scanner.Scan() {
-	//     word := strings.TrimSpace(scanner.Text())
-	//     if word != "" {
-	//         words = append(words, word)
-	//     }
-	// }
-	// acFilter := sensitive.NewACFilter()
-	// acFilter.Build(words)
 
 	// ==============================
 	// init redis cache
@@ -94,10 +72,19 @@ func NewServer() (h *Server) {
 	messageService := service.NewMessageService(messageRepo, sessionRepo, contactRepo, groupRepo)
 	sessionService := service.NewSessionService(sessionRepo, userRepo, groupRepo)
 	accountLifecycleService := service.NewAccountLifecycleService(userRepo, txManager)
-	webSocketService := ws.NewWebsocketService(messageService, sessionService)
 
 	// ==============================
-	// init restful
+	// init WebSocket gateway and handler
+	// (For improvement to a distributed gateway)
+	// ==============================
+	zlog.Info("initializing websocket gateway and handler...")
+	webSocketGateway := ws.NewGateway()
+	webSocketCommandHandler := wshandler.NewCommandHandler(messageService)
+	webSocketCommandHandler.SetPusher(webSocketGateway)
+	webSocketGateway.SetInboundHandler(webSocketCommandHandler)
+
+	// ==============================
+	// init App instance
 	// ==============================
 	app := &handler.App{
 		Restful: handler.Restful{
@@ -110,44 +97,58 @@ func NewServer() (h *Server) {
 			Message:     restful.NewMessageHandler(messageService),
 		},
 		WebSocket: handler.WebSocket{
-			WS: websocket.NewWebsocketHandler(webSocketService, authService),
+			WS: websocket.NewWebsocketHandler(webSocketGateway),
 		},
 	}
-
-	// html template pre-compile
-	// zlog.Info("pre-compiling html templates...")
-	// tmpls := loadTmlps()
-	// render.Init(tmpls, "layout")
-
-	backgroundCtx, backgroundCancel := context.WithCancel(context.Background())
-	startAccountPurgeWorker(backgroundCtx, accountLifecycleService)
 
 	h = &Server{
 		httpServer: &http.Server{
 			Addr:    fmt.Sprintf(":%d", cfg.ServerConfig.Port),
 			Handler: router.LoadRouters(app, authService),
 		},
-		backgroundCancel: backgroundCancel,
+		accountLifecycleService: accountLifecycleService,
+		webSocketGateway:        webSocketGateway,
 	}
 	return
 }
 
 func (s *Server) Run() {
-	if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		zlog.Error("http_server startup failed", zap.Error(err))
-	}
+	s.runOnce.Do(
+		func() {
+			s.lifecycleCtx, s.lifecycleCancel = context.WithCancel(context.Background())
+			startAccountPurgeWorker(s.lifecycleCtx, s.accountLifecycleService)
+			if err := s.webSocketGateway.Start(s.lifecycleCtx); err != nil {
+				zlog.Error("websocket gateway startup failed", zap.Error(err))
+				return
+			}
+			if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				if s.lifecycleCancel != nil {
+					s.lifecycleCancel()
+				}
+				_ = s.webSocketGateway.Shutdown(context.Background())
+				zlog.Error("http_server startup failed", zap.Error(err))
+			}
+		},
+	)
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	if s.backgroundCancel != nil {
-		s.backgroundCancel()
-	}
-	return s.httpServer.Shutdown(ctx)
+	var shutdownErr error
+	s.shutdownOnce.Do(
+		func() {
+			if s.lifecycleCancel != nil {
+				s.lifecycleCancel()
+			}
+			wsErr := s.webSocketGateway.Shutdown(ctx)
+			httpErr := s.httpServer.Shutdown(ctx)
+			shutdownErr = errors.Join(wsErr, httpErr)
+		},
+	)
+	return shutdownErr
 }
 
 func startAccountPurgeWorker(ctx context.Context, svc *service.AccountLifecycleService) {
 	const purgeInterval = time.Hour
-	const purgeBatchSize = 50
 
 	go func() {
 		ticker := time.NewTicker(purgeInterval)
@@ -172,16 +173,3 @@ func startAccountPurgeWorker(ctx context.Context, svc *service.AccountLifecycleS
 		}
 	}()
 }
-
-// func loadTmlps() map[string]*template.Template {
-//     tmpls := make(map[string]*template.Template)
-//
-//     baseDir := cfg.App.TemplateDir
-//     layout := baseDir + "layout/layout.html"
-//
-//     tmpls["index"] = template.Must(template.ParseFiles(layout, baseDir+"index.html"))
-//     tmpls["admin"] = template.Must(template.ParseFiles(layout, baseDir+"admin.html"))
-//     tmpls["article"] = template.Must(template.ParseFiles(layout, baseDir+"article.html"))
-//     // tmpls["layout"] = template.Must(template.ParseFiles("web/templates/layout.html"))
-//     return tmpls
-// }

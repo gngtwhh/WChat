@@ -1,23 +1,23 @@
 package websocket
 
 import (
-	"wchat/internal/service"
-	"wchat/internal/websocket"
+	"wchat/internal/middleware"
+	"wchat/internal/network/websocket"
+	"wchat/pkg/errcode"
 	"wchat/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 type WebsocketHandler struct {
-	svc     *websocket.WebsocketService
-	authSvc *service.AuthService
+	gateway *websocket.Gateway
 }
 
-func NewWebsocketHandler(svc *websocket.WebsocketService, authSvc *service.AuthService) *WebsocketHandler {
-	return &WebsocketHandler{svc: svc, authSvc: authSvc}
+func NewWebsocketHandler(gateway *websocket.Gateway) *WebsocketHandler {
+	return &WebsocketHandler{gateway: gateway}
 }
 
-// WsHandler WebSocket 连接入口
+// WsUpgrade WebSocket 连接入口
 // @Summary      WebSocket 连接
 // @Description  将 HTTP 连接升级为 WebSocket 长连接，用于实时消息推送和收发。
 //
@@ -28,18 +28,16 @@ func NewWebsocketHandler(svc *websocket.WebsocketService, authSvc *service.AuthS
 //	- cmd=3001 系统事件（服务端主动推送）
 //
 // @Tags         WebSocket
-// @Param        token  query  string  true  "JWT Token"
 // @Success      101    "协议升级成功，WebSocket 连接已建立"
 // @Failure      200    {object}  response.Response{data=nil}  "Token 无效 / Token 缺失"
 // @Router       /ws [get]
-func (h WebsocketHandler) WsHandler(c *gin.Context) {
-	token := c.Query("token")
-	user, err := h.authSvc.ValidateToken(c.Request.Context(), token)
-	if err != nil {
-		response.FailErr(c, err)
+func (h *WebsocketHandler) WsUpgrade(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		response.Fail(c, errcode.TokenInvalid)
 		return
 	}
 
 	// Upgrade to WebSocket and start serving
-	h.svc.ServeWS(c.Writer, c.Request, user.Uuid)
+	h.gateway.ServeWS(c.Writer, c.Request, userID)
 }

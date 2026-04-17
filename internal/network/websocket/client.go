@@ -21,14 +21,15 @@ type Client struct {
 	hub      *Hub
 	conn     *websocket.Conn
 	send     chan []byte
+	ID       string
 	UserID   string
-	dispatch func(*Client, []byte) // set by Dispatcher.Dispatch
+	dispatch func(ConnectionContext, []byte) // set by Dispatcher.Dispatch
 }
 
 // readPump reads messages from the WebSocket connection and forwards them to the dispatcher.
 func (c *Client) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		c.hub.UnregisterClient(c)
 		c.conn.Close()
 	}()
 
@@ -47,7 +48,13 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		c.dispatch(c, message)
+		c.dispatch(
+			ConnectionContext{
+				ConnectionID: c.ID,
+				UserID:       c.UserID,
+			},
+			message,
+		)
 	}
 }
 

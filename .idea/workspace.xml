@@ -5,26 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="207e64f0-a175-419c-b840-4a43e0a83c4b" name="更改" comment="Update: Reconstruct the project">
-      <change afterPath="$PROJECT_DIR$/internal/handler/app.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/handler/restful/application.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/handler/restful/contact.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/handler/restful/message.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/handler/restful/session.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/app/http_server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/app/http_server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/application.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/restful/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/contact.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/restful/group.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/handler.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/message.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/session.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/restful/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handler/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handler/websocket/websocket.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/middleware/log.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/middleware/log.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handler/websocket/websocket.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/router/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/router/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/websocket/dispatcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/websocket/dispatcher.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/websocket/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/websocket/websocket.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/websocket/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/network/websocket/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/websocket/dispatcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/network/websocket/dispatcher.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/websocket/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/network/websocket/handler.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/websocket/hub.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/network/websocket/hub.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/websocket/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/network/websocket/ws_gateway.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/web/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,40 +55,40 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;Go 构建.go build wchat/cmd.executor&quot;: &quot;Debug&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.GoLinterPluginOnboarding&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.GoLinterPluginOnboardingV2&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.GoLinterPluginStorageMigration&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.analysis.ui.options.defaults&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Data/code/Go/WChat/internal/service&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "Go 构建.go build wchat/cmd.executor": "Debug",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.GoLinterPluginOnboarding": "true",
+    "RunOnceActivity.GoLinterPluginOnboardingV2": "true",
+    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.analysis.ui.options.defaults": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "D:/Data/code/Go/WChat/internal/service",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "settings.editor.selected.configurable": "editor.preferences.fonts.default",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;ChangesTree.GroupingKeys&quot;: [
-      &quot;repository&quot;
+  "keyToStringList": {
+    "ChangesTree.GroupingKeys": [
+      "repository"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="GoMoveDeclarationDialog.RECENT_KEY">
       <recent name="$PROJECT_DIR$/internal/types" />
@@ -107,10 +97,11 @@
       <recent name="D:\Data\code\Go\WChat\internal\service" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Data\code\Go\WChat\internal\network" />
+      <recent name="D:\Data\code\Go\WChat\internal" />
       <recent name="D:\Data\code\Go\WChat\internal\handler" />
       <recent name="D:\Data\code\Go\WChat\internal\http\websocket" />
       <recent name="D:\Data\code\Go\WChat\internal\websocket" />
-      <recent name="D:\Data\code\Go\WChat\internal\app\http_server" />
     </key>
   </component>
   <component name="RunManager">
@@ -156,7 +147,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
