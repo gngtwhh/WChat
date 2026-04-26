@@ -722,6 +722,117 @@
       margin: 6px 0 12px;
     }
 
+    .chat-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .chat-history-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .message-list {
+      min-height: 320px;
+      max-height: 620px;
+      overflow: auto;
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at top right, rgba(31, 106, 88, 0.08), transparent 26%),
+        linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(247, 241, 231, 0.9));
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: min(82%, 620px);
+    }
+
+    .message-row.is-own {
+      margin-left: auto;
+      align-items: flex-end;
+    }
+
+    .message-row.is-other {
+      margin-right: auto;
+      align-items: flex-start;
+    }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+      flex-wrap: wrap;
+    }
+
+    .message-bubble {
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(61, 49, 39, 0.12);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 10px 24px rgba(54, 39, 26, 0.08);
+      line-height: 1.65;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message-row.is-own .message-bubble {
+      background: linear-gradient(180deg, rgba(31, 106, 88, 0.16), rgba(255, 253, 248, 0.95));
+      border-color: rgba(31, 106, 88, 0.18);
+    }
+
+    .message-bubble.is-recalled {
+      background: rgba(29, 37, 48, 0.06);
+      color: var(--muted);
+      font-style: italic;
+      box-shadow: none;
+    }
+
+    .message-bubble.is-pending {
+      opacity: 0.7;
+    }
+
+    .message-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .message-actions button {
+      padding: 6px 10px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
+    .message-list .empty-state {
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
     .is-hidden {
       display: none !important;
     }
@@ -773,6 +884,10 @@
 
       .kv-row {
         grid-template-columns: 1fr;
+      }
+
+      .message-row {
+        max-width: 100%;
       }
     }
   </style>
@@ -937,7 +1052,7 @@
           <div class="diagnostic-list" id="capability-list"></div>
           <div class="restricted-box">
             <strong>结论</strong>
-            <p>当前页面不会伪造“WS 已连接”或“消息历史已可用”。聊天工作区只生成报文预览，不会发出无效请求。</p>
+            <p>当前页面已接入真实 WebSocket 连接、聊天时间线、历史消息分页与消息撤回；日志面板继续保留用于协议排查。</p>
           </div>
         </section>
       </div>
@@ -1081,7 +1196,7 @@
             <div>
               <p class="eyebrow">Chat Workbench</p>
               <h2>聊天工作区</h2>
-              <p>这里不做真实收发，只生成基于当前选中会话的 `cmd=2001` 报文预览。</p>
+              <p>这里接入真实 WebSocket 收发、历史消息分页与消息撤回；payload 预览保留为调试辅助信息。</p>
             </div>
           </div>
 
@@ -1089,21 +1204,32 @@
 
           <div class="divider"></div>
 
+          <div class="chat-shell">
+            <div class="chat-toolbar">
+              <button type="button" class="secondary" id="btn-load-history">加载更早消息</button>
+              <p class="chat-history-meta" id="chat-history-status"></p>
+            </div>
+            <div id="message-list" class="message-list"></div>
+          </div>
+
+          <div class="divider"></div>
+
           <div class="form-grid single">
             <label class="field">
-              <span>示例消息内容</span>
-              <textarea id="payload-content" placeholder="输入一段示例文本"></textarea>
+              <span>消息内容</span>
+              <textarea id="payload-content" placeholder="输入消息文本，发送到当前选中的会话"></textarea>
             </label>
           </div>
 
           <div class="inline-actions">
             <button type="button" id="btn-copy-payload">复制 payload</button>
-            <button type="button" class="danger" id="btn-disabled-send" disabled title="当前浏览器页无法合法直连后端 WebSocket">发送（已禁用）</button>
+            <button type="button" class="danger" id="btn-disabled-send" disabled>发送</button>
           </div>
 
           <p class="hint" id="workbench-reason"></p>
 
           <div class="divider"></div>
+          <p class="hint">调试辅助：保留当前输入对应的 `cmd=2001` payload 预览，便于对照日志与协议。</p>
           <pre class="code-block" id="payload-preview"></pre>
 
           <div class="restricted-box" id="message-restriction"></div>
@@ -1114,7 +1240,7 @@
             <div>
               <p class="eyebrow">Logs</p>
               <h2>请求 / 响应日志</h2>
-              <p>记录 REST 请求和能力诊断，不再伪造 WS 收发日志。</p>
+              <p>这里记录 REST 请求，以及 WebSocket 的连接、发送、ACK 和 Push 日志。</p>
             </div>
             <div class="inline-actions">
               <button type="button" class="secondary" id="btn-clear-logs">清空日志</button>
@@ -1196,33 +1322,42 @@
           content: DEFAULTS.sampleMessage
         },
         chatPayloadPreview: "",
-        restrictionReason: "当前页面不会直接发消息，因为浏览器原生 WebSocket 不能为 /api/v1/ws 设置 Authorization 请求头。"
+        restrictionReason: "登录后选择会话，并保持 WebSocket 已连接，才可以发送消息。",
+        messageCache: {},
+        groupMemberCache: {}
+      },
+      ws: {
+        socket: null,
+        status: "disconnected",
+        lastError: "",
+        seq: 0,
+        intentionalClose: false,
+        pendingBySeq: {}
       },
       capabilities: {
-        supportsBrowserWS: false,
-        supportsMessageHistory: false,
+        supportsBrowserWS: true,
+        supportsMessageHistory: true,
         evidence: [
           {
-            title: "浏览器直连 WebSocket 不可用",
-            result: "受限",
-            tone: "warning",
-            reason: "当前后端把 WebSocket 挂在受保护的 /api/v1/ws，并要求 Authorization: Bearer <token>。旧页面使用的是 /ws?token=...，与真实代码不一致。",
+            title: "浏览器直连 WebSocket 已接通",
+            result: "可用",
+            tone: "positive",
+            reason: "当前页面会在浏览器无法自定义 Authorization 头时，改用 query token 连接 /api/v1/ws。",
             bullets: [
-              "真实路由位于受保护的 /api/v1/ws。",
-              "鉴权由中间件读取 Authorization 头，不读 query token。",
-              "浏览器原生 WebSocket 无法像 fetch 一样自定义 Authorization 请求头。",
-              "因此这个静态页不能合法建立真实 WS 连接。"
+              "后端仍支持 Authorization: Bearer <token>。",
+              "浏览器页面使用 /api/v1/ws?token=<jwt> 作为回退方案。",
+              "当前静态页已经接入真实连接和消息发送。"
             ]
           },
           {
-            title: "消息历史 / 撤回接口不可用",
-            result: "未暴露",
-            tone: "danger",
-            reason: "当前后端虽然实现了 MessageHandler，但 router 中 /messages 路由段被注释掉了，所以页面不能请求历史消息或撤回接口。",
+            title: "聊天时间线、历史分页与撤回已接入",
+            result: "可用",
+            tone: "positive",
+            reason: "当前静态页已直接消费 2004/2005 历史协议与 2006/2007/2008 撤回协议，并保留日志面板辅助排障。",
             bullets: [
-              "页面不再请求 /messages。",
-              "聊天工作区只生成 cmd=2001 预览报文，不会假装可以拉取历史。",
-              "如果后续要恢复，需要单独开放路由并补齐浏览器可用的 WS 鉴权方案。"
+              "消息发送协议仍是 2001/2002/2003。",
+              "会话进入后会拉取历史消息，并支持分页加载更早消息。",
+              "消息撤回会同时更新聊天时间线与会话摘要。"
             ]
           }
         ]
@@ -1498,9 +1633,41 @@
       return state.profile.current ? state.profile.current.uuid : (state.auth.currentUser ? state.auth.currentUser.uuid : "");
     }
 
+    function getWsStatusMeta() {
+      if (state.ws.status === "connected") {
+        return { text: "已连接", tone: "positive" };
+      }
+      if (state.ws.status === "connecting") {
+        return { text: "连接中", tone: "warning" };
+      }
+      if (state.ws.lastError) {
+        return { text: "未连接", tone: "danger" };
+      }
+      return { text: "未连接", tone: "neutral" };
+    }
+
+    function getWorkbenchReason() {
+      if (!isAuthed()) {
+        return "请先登录，登录成功后会自动建立实时连接。";
+      }
+      if (!state.sessions.selectedSession) {
+        return "请先选择一个会话，再发送 `cmd=2001` 消息。";
+      }
+      if (state.ws.status === "connecting") {
+        return "WebSocket 正在连接，请等待连接建立后再发送。";
+      }
+      if (state.ws.status !== "connected") {
+        return state.ws.lastError
+          ? "WebSocket 未连接：" + state.ws.lastError
+          : "WebSocket 当前未连接；登录态恢复或配置变更后会自动重连。";
+      }
+      return "当前会话已可实时收发、拉取历史并执行消息撤回。";
+    }
+
     function renderHero() {
       const currentUser = state.profile.current || state.auth.currentUser;
       const selectedSession = state.sessions.selectedSession;
+      const wsMeta = getWsStatusMeta();
       const chips = [
         chip(isAuthed() ? "已持有 Token" : "未登录", isAuthed() ? "positive" : "warning"),
         chip(buildApiBase(), "info"),
@@ -1516,7 +1683,8 @@
         chip(
           selectedSession ? "当前会话 " + (selectedSession.target_name || selectedSession.target_id) : "未选中会话",
           selectedSession ? "info" : "neutral"
-        )
+        ),
+        chip("WS " + wsMeta.text, wsMeta.tone)
       ];
       $("hero-chips").innerHTML = chips.join("");
     }
@@ -1527,7 +1695,7 @@
       $("config-summary").innerHTML =
         '<div class="kv-row"><span>REST 根路径</span><strong class="mono">' + escapeHtml(buildApiBase()) + "</strong></div>" +
         '<div class="kv-row"><span>页面模式</span><strong>独立静态页 / 只改前端文件</strong></div>' +
-        '<div class="kv-row"><span>聊天策略</span><strong>报文预览 + 能力诊断，不伪造 WebSocket 连接</strong></div>';
+        '<div class="kv-row"><span>聊天策略</span><strong>真实 WebSocket 连接 + 历史分页 + 消息撤回 + payload 预览</strong></div>';
     }
 
     function renderAuth() {
@@ -1583,7 +1751,22 @@
     }
 
     function renderCapabilities() {
-      $("capability-list").innerHTML = state.capabilities.evidence.map(function (item) {
+      const wsMeta = getWsStatusMeta();
+      const connectionCard =
+        '<article class="capability-card">' +
+        "<header>" +
+        "<strong>当前 WebSocket 状态</strong>" +
+        chip(wsMeta.text, wsMeta.tone) +
+        "</header>" +
+        "<p>" + escapeHtml(state.ws.lastError || "实时连接会跟随当前登录态和运行配置自动建立或重连。") + "</p>" +
+        '<ul class="evidence-list">' +
+        "<li>连接地址：" + escapeHtml(buildApiBase() + "/ws") + "</li>" +
+        "<li>浏览器场景下使用 query token 作为 Authorization 头的回退方案。</li>" +
+        "<li>当前页已消费 2001/2002/2003、2004/2005、2006/2007/2008 全套聊天相关协议。</li>" +
+        "</ul>" +
+        "</article>";
+
+      $("capability-list").innerHTML = connectionCard + state.capabilities.evidence.map(function (item) {
         return (
           '<article class="capability-card">' +
           "<header>" +
@@ -1902,51 +2085,82 @@
 
     function renderWorkbench() {
       const selected = state.sessions.selectedSession;
+      const sendButton = $("btn-disabled-send");
+      const loadButton = $("btn-load-history");
+      const wsMeta = getWsStatusMeta();
+      let historyText = "选择会话后，这里会显示消息历史加载状态。";
+
       $("payload-content").value = state.sessions.payloadDraft.content;
+      state.sessions.restrictionReason = getWorkbenchReason();
+      $("payload-preview").textContent = state.sessions.chatPayloadPreview || "";
 
       if (!isAuthed()) {
-        $("workbench-summary").innerHTML = emptyState("登录后选择会话，才能生成聊天报文预览。");
-        $("payload-preview").textContent = "";
-        $("workbench-reason").textContent = state.sessions.restrictionReason;
-        $("message-restriction").innerHTML =
-          "<strong>消息能力当前受限</strong><ul><li>浏览器页无法对 /api/v1/ws 携带 Authorization 请求头。</li><li>/messages 与撤回路由当前未在 router 中开放。</li></ul>";
-        return;
-      }
-
-      if (!selected) {
-        $("workbench-summary").innerHTML = emptyState("先在“会话”面板选中一个会话，再生成 `cmd=2001` 的报文预览。");
-        $("payload-preview").textContent = "";
+        $("workbench-summary").innerHTML = emptyState("登录后选择会话，才能查看聊天时间线与发送实时消息。");
+        $("message-list").innerHTML = emptyState("登录后会在这里显示聊天记录。");
+        loadButton.disabled = true;
+        loadButton.textContent = "加载更早消息";
+      } else if (!selected) {
+        $("workbench-summary").innerHTML = emptyState("先在“会话”面板选中一个会话，再加载历史消息或发送新消息。");
+        $("message-list").innerHTML = emptyState("未选中会话。");
+        loadButton.disabled = true;
+        loadButton.textContent = "加载更早消息";
       } else {
+        const chatState = getSessionChatState(selected.uuid);
+        const groupCache = selected.session_type === 1 ? getGroupMemberCache(selected.target_id) : null;
+        historyText = buildHistoryStatusText(selected, chatState);
+
         $("workbench-summary").innerHTML =
           '<div class="note-card">' +
-          "<strong>预览目标</strong>" +
+          "<strong>当前聊天</strong>" +
           '<div class="kv compact">' +
           kvRow("会话", selected.target_name || selected.target_id) +
           kvRow("目标 ID", selected.target_id, true) +
           kvRow("会话类型", SESSION_TYPE_MAP[selected.session_type] || "-") +
+          kvRow("WS 状态", wsMeta.text) +
+          kvRow("历史状态", historyText) +
+          (selected.session_type === 1
+            ? kvRow("群成员缓存", groupCache.loaded ? String(Object.keys(groupCache.membersById).length) + " 人" : (groupCache.loading ? "加载中" : "未加载"))
+            : "") +
           "</div></div>";
-        $("payload-preview").textContent = state.sessions.chatPayloadPreview || "";
+
+        $("message-list").innerHTML = buildMessageListHtml(selected, chatState);
+        loadButton.disabled = !(state.ws.status === "connected" && !chatState.loading && (!chatState.initialized || chatState.hasMore));
+        loadButton.textContent = !chatState.initialized
+          ? (chatState.loading ? "加载中..." : "加载消息")
+          : (chatState.loading ? "加载中..." : (chatState.hasMore ? "加载更早消息" : "没有更早消息"));
       }
 
+      sendButton.disabled = !(isAuthed() && selected && state.ws.status === "connected" && String(state.sessions.payloadDraft.content || "").trim());
+      sendButton.textContent = state.ws.status === "connecting" ? "连接中..." : "发送";
+      sendButton.title = state.ws.status === "connected"
+        ? "通过 cmd=2001 发送当前输入内容"
+        : "请先登录、选择会话，并等待 WebSocket 连接成功";
+
+      $("chat-history-status").textContent = historyText;
       $("workbench-reason").textContent = state.sessions.restrictionReason;
       $("message-restriction").innerHTML =
-        "<strong>当前聊天相关能力只做诊断</strong><ul><li>不会建立 WebSocket 连接，也不会显示“连接成功”的误导状态。</li><li>不会请求 /messages，因此不会拉取历史消息或测试撤回。</li><li>可以复制下面的 payload，到别的受控调试环境中使用。</li></ul>";
+        "<strong>当前接入范围</strong><ul><li>连接状态：" + escapeHtml(wsMeta.text) + "</li><li>消息历史走 cmd=2004/2005，撤回走 cmd=2006/2007/2008。</li><li>当前静态页只展示文本消息，媒体与 WebRTC 仍只保留协议层能力。</li></ul>";
     }
 
     function renderLogs() {
       if (!state.logs.length) {
-        $("log-list").innerHTML = emptyState("日志为空。执行一次 API 请求或查看能力诊断后，这里会开始累计记录。");
+        $("log-list").innerHTML = emptyState("日志为空。执行一次 REST 请求或 WebSocket 动作后，这里会开始记录。");
         return;
       }
 
       $("log-list").innerHTML = state.logs.map(function (entry, index) {
+        const kindLabel = entry.kind === "capability" ? "能力诊断" : entry.kind === "ws" ? "WS" : "REST";
+        const kindTone = entry.kind === "capability" ? "info" : entry.kind === "ws" ? "warning" : "neutral";
         const bizTone = entry.kind === "capability"
           ? "info"
-          : String(entry.bizCode) === "0"
-            ? "positive"
-            : String(entry.bizCode) === "-"
-              ? "warning"
-              : "danger";
+          : entry.kind === "ws"
+            ? "warning"
+            : String(entry.bizCode) === "0"
+              ? "positive"
+              : String(entry.bizCode) === "-"
+                ? "warning"
+                : "danger";
+        const statusLabel = entry.kind === "ws" ? "状态 " + String(entry.statusCode ?? "-") : "HTTP " + String(entry.statusCode ?? "-");
 
         return (
           '<details class="log-entry" ' + (index === 0 ? "open" : "") + ">" +
@@ -1954,8 +2168,8 @@
           '<div class="log-summary">' +
           "<div><strong>" + escapeHtml(entry.message || "-") + "</strong><p>" + escapeHtml(formatDateTime(entry.time)) + " · " + escapeHtml((entry.method || "-") + " " + (entry.path || "-")) + "</p></div>" +
           '<div class="chip-row">' +
-          chip(entry.kind === "capability" ? "Capability" : "REST", entry.kind === "capability" ? "info" : "neutral") +
-          chip("HTTP " + String(entry.statusCode ?? "-"), "neutral") +
+          chip(kindLabel, kindTone) +
+          chip(statusLabel, "neutral") +
           chip("Biz " + String(entry.bizCode ?? "-"), bizTone) +
           "</div></div></summary>" +
           '<div class="log-body"><div class="log-grid">' +
@@ -1984,6 +2198,14 @@
       state.sessions.selectedSession = null;
       state.sessions.sessionMeta = null;
       state.sessions.chatPayloadPreview = "";
+      state.sessions.messageCache = {};
+      state.sessions.groupMemberCache = {};
+      state.ws.socket = null;
+      state.ws.status = "disconnected";
+      state.ws.lastError = "";
+      state.ws.seq = 0;
+      state.ws.intentionalClose = false;
+      state.ws.pendingBySeq = {};
     }
 
     function clearAuthForm() {
@@ -1992,6 +2214,7 @@
     }
 
     function clearAuthState() {
+      disconnectWebSocket({ silent: true, reason: "clear auth" });
       state.auth.token = "";
       state.auth.currentUser = null;
       persistAuth();
@@ -2007,6 +2230,96 @@
         gender: profile && (profile.gender === 0 || profile.gender === 1) ? String(profile.gender) : "",
         signature: profile && profile.signature ? profile.signature : ""
       };
+    }
+
+    function createChatState() {
+      return {
+        messages: [],
+        page: 0,
+        size: 50,
+        total: 0,
+        hasMore: false,
+        loading: false,
+        initialized: false,
+        error: ""
+      };
+    }
+
+    function getSessionChatState(sessionUuid) {
+      if (!sessionUuid) {
+        return createChatState();
+      }
+      if (!state.sessions.messageCache[sessionUuid]) {
+        state.sessions.messageCache[sessionUuid] = createChatState();
+      }
+      return state.sessions.messageCache[sessionUuid];
+    }
+
+    function getGroupMemberCache(groupUuid) {
+      if (!groupUuid) {
+        return { loaded: false, loading: false, membersById: {} };
+      }
+      if (!state.sessions.groupMemberCache[groupUuid]) {
+        state.sessions.groupMemberCache[groupUuid] = {
+          loaded: false,
+          loading: false,
+          membersById: {}
+        };
+      }
+      return state.sessions.groupMemberCache[groupUuid];
+    }
+
+    function seedGroupMemberCache(groupUuid, members) {
+      if (!groupUuid) {
+        return;
+      }
+      const cache = getGroupMemberCache(groupUuid);
+      const next = {};
+      (members || []).forEach(function (member) {
+        if (member && member.uuid) {
+          next[member.uuid] = member.nickname || member.uuid;
+        }
+      });
+      cache.membersById = next;
+      cache.loaded = true;
+      cache.loading = false;
+    }
+
+    async function ensureGroupMembersLoaded(groupUuid, options) {
+      const opts = options || {};
+      if (!groupUuid) {
+        return false;
+      }
+
+      const cache = getGroupMemberCache(groupUuid);
+      if (cache.loaded) {
+        return true;
+      }
+
+      if (state.groups.current && state.groups.current.uuid === groupUuid && state.groups.members.length) {
+        seedGroupMemberCache(groupUuid, state.groups.members);
+        return true;
+      }
+
+      if (cache.loading) {
+        return false;
+      }
+
+      cache.loading = true;
+      renderWorkbench();
+      const result = await apiRequest("GET", "/groups/" + groupUuid + "/members");
+      cache.loading = false;
+      if (!result.ok) {
+        if (!opts.silent) {
+          flash("获取群成员失败：" + result.message, "danger");
+        }
+        renderWorkbench();
+        return false;
+      }
+
+      seedGroupMemberCache(groupUuid, Array.isArray(result.data && result.data.list) ? result.data.list : []);
+      renderWorkbench();
+      return true;
     }
 
     function syncSelectedSession(selectUuid) {
@@ -2028,27 +2341,981 @@
       updatePayloadPreview();
     }
 
-    function updatePayloadPreview() {
-      const selected = state.sessions.selectedSession;
-      if (!selected) {
-        state.sessions.chatPayloadPreview = "";
-        renderWorkbench();
+    function nextWsSeq(prefix) {
+      state.ws.seq += 1;
+      return prefix + "_" + state.ws.seq;
+    }
+
+    function getWsPending(seq) {
+      return seq ? state.ws.pendingBySeq[seq] || null : null;
+    }
+
+    function takeWsPending(seq) {
+      if (!seq) {
+        return null;
+      }
+      const pending = state.ws.pendingBySeq[seq] || null;
+      delete state.ws.pendingBySeq[seq];
+      return pending;
+    }
+
+    function setWsPending(seq, pending) {
+      if (seq && pending) {
+        state.ws.pendingBySeq[seq] = pending;
+      }
+    }
+
+    function cancelWsPending() {
+      Object.keys(state.ws.pendingBySeq).forEach(function (seq) {
+        const pending = state.ws.pendingBySeq[seq];
+        if (!pending) {
+          return;
+        }
+        if (pending.kind === "history") {
+          const chatState = getSessionChatState(pending.sessionUuid);
+          chatState.loading = false;
+          if (!chatState.initialized) {
+            chatState.error = "WebSocket 已断开，消息历史加载已取消。";
+          }
+        } else if (pending.kind === "recall") {
+          setMessageRecalling(pending.messageUuid, false);
+        }
+      });
+      state.ws.pendingBySeq = {};
+    }
+
+    function getMessageField(message, lowerKey, upperKey) {
+      if (!message || typeof message !== "object") {
+        return undefined;
+      }
+      if (Object.prototype.hasOwnProperty.call(message, lowerKey)) {
+        return message[lowerKey];
+      }
+      return message[upperKey];
+    }
+
+    function normalizeMessage(message, sessionIdOverride) {
+      if (!message || typeof message !== "object") {
+        return null;
+      }
+      const uuid = getMessageField(message, "uuid", "Uuid");
+      if (!uuid) {
+        return null;
+      }
+      return {
+        uuid: uuid,
+        session_id: sessionIdOverride || getMessageField(message, "session_id", "SessionId") || "",
+        type: Number(getMessageField(message, "type", "Type") || 0),
+        content: getMessageField(message, "content", "Content") || "",
+        url: getMessageField(message, "url", "Url") || "",
+        send_id: getMessageField(message, "send_id", "SendId") || "",
+        receive_id: getMessageField(message, "receive_id", "ReceiveId") || "",
+        file_type: getMessageField(message, "file_type", "FileType") || "",
+        file_name: getMessageField(message, "file_name", "FileName") || "",
+        file_size: Number(getMessageField(message, "file_size", "FileSize") || 0),
+        av_data: getMessageField(message, "av_data", "AVdata") || "",
+        status: Number(getMessageField(message, "status", "Status") || 0),
+        send_at: getMessageField(message, "send_at", "SendAt") || "",
+        is_recalling: Boolean(message.is_recalling)
+      };
+    }
+
+    function messageTimeValue(value) {
+      if (!value) {
+        return 0;
+      }
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    }
+
+    function compareMessages(left, right) {
+      const timeDiff = messageTimeValue(left.send_at) - messageTimeValue(right.send_at);
+      if (timeDiff !== 0) {
+        return timeDiff;
+      }
+      return String(left.uuid || "").localeCompare(String(right.uuid || ""));
+    }
+
+    function mergeMessages(existing, incoming) {
+      const map = {};
+      (existing || []).forEach(function (message) {
+        map[message.uuid] = Object.assign({}, message);
+      });
+      (incoming || []).forEach(function (message) {
+        if (!message || !message.uuid) {
+          return;
+        }
+        const prev = map[message.uuid] || {};
+        map[message.uuid] = Object.assign({}, prev, message, {
+          is_recalling: typeof message.is_recalling === "boolean" ? message.is_recalling : Boolean(prev.is_recalling)
+        });
+      });
+      return Object.keys(map).map(function (uuid) {
+        return map[uuid];
+      }).sort(compareMessages);
+    }
+
+    function messageDigestForClient(message) {
+      if (!message) {
+        return "";
+      }
+      if (Number(message.status) === 2) {
+        return "";
+      }
+      if (Number(message.type) !== 0) {
+        return "[Media Message]";
+      }
+      return message.content || "";
+    }
+
+    function buildSessionSummaryFromMessages(messages) {
+      for (let index = (messages || []).length - 1; index >= 0; index -= 1) {
+        const message = messages[index];
+        const digest = messageDigestForClient(message);
+        if (digest) {
+          return {
+            last_message: digest,
+            last_message_at: message.send_at || ""
+          };
+        }
+      }
+      return {
+        last_message: "",
+        last_message_at: ""
+      };
+    }
+
+    function sortSessionList() {
+      state.sessions.list = state.sessions.list.slice().sort(function (left, right) {
+        const topDiff = Number(right.is_top || 0) - Number(left.is_top || 0);
+        if (topDiff !== 0) {
+          return topDiff;
+        }
+        return messageTimeValue(right.last_message_at) - messageTimeValue(left.last_message_at);
+      });
+    }
+
+    function refreshSelectedMetaFromList(sessionUuid) {
+      if (!state.sessions.selectedSession || state.sessions.selectedSession.uuid !== sessionUuid) {
         return;
       }
+      const next = state.sessions.list.find(function (session) {
+        return session.uuid === sessionUuid;
+      }) || null;
+      state.sessions.selectedSession = next;
+      state.sessions.sessionMeta = next ? {
+        uuid: next.uuid,
+        target_id: next.target_id,
+        target_name: next.target_name,
+        session_type: next.session_type,
+        unread_count: next.unread_count,
+        is_top: next.is_top,
+        last_message: next.last_message,
+        last_message_at: next.last_message_at
+      } : null;
+    }
 
-      const payload = {
+    function patchSessionRecord(sessionUuid, patch) {
+      let changed = false;
+      state.sessions.list = state.sessions.list.map(function (session) {
+        if (session.uuid !== sessionUuid) {
+          return session;
+        }
+        changed = true;
+        return Object.assign({}, session, patch);
+      });
+      if (!changed) {
+        return false;
+      }
+      sortSessionList();
+      refreshSelectedMetaFromList(sessionUuid);
+      renderHero();
+      return true;
+    }
+
+    function applyLocalSessionSummary(sessionUuid) {
+      const chatState = getSessionChatState(sessionUuid);
+      return patchSessionRecord(sessionUuid, buildSessionSummaryFromMessages(chatState.messages));
+    }
+
+    function setSessionUnreadLocal(sessionUuid, unreadCount) {
+      return patchSessionRecord(sessionUuid, { unread_count: Math.max(0, Number(unreadCount || 0)) });
+    }
+
+    function incrementSessionUnreadLocal(sessionUuid) {
+      const current = state.sessions.list.find(function (session) {
+        return session.uuid === sessionUuid;
+      });
+      if (!current) {
+        return false;
+      }
+      return setSessionUnreadLocal(sessionUuid, Number(current.unread_count || 0) + 1);
+    }
+
+    function setMessageRecalling(messageUuid, recalling) {
+      updateCachedMessageByUuid(messageUuid, function (message) {
+        message.is_recalling = recalling;
+        return message;
+      });
+    }
+
+    function updateCachedMessageByUuid(messageUuid, updater) {
+      const affectedSessionUuids = [];
+      Object.keys(state.sessions.messageCache).forEach(function (sessionUuid) {
+        const chatState = state.sessions.messageCache[sessionUuid];
+        let changed = false;
+        chatState.messages = chatState.messages.map(function (message) {
+          if (message.uuid !== messageUuid) {
+            return message;
+          }
+          changed = true;
+          return updater(Object.assign({}, message));
+        });
+        if (changed) {
+          affectedSessionUuids.push(sessionUuid);
+        }
+      });
+      return affectedSessionUuids;
+    }
+
+    function applyRecallStateToCaches(messageUuid, messageStatus) {
+      const affectedSessionUuids = updateCachedMessageByUuid(messageUuid, function (message) {
+        message.status = messageStatus;
+        message.is_recalling = false;
+        return message;
+      });
+      affectedSessionUuids.forEach(function (sessionUuid) {
+        applyLocalSessionSummary(sessionUuid);
+      });
+      return affectedSessionUuids;
+    }
+
+    function buildHistoryStatusText(selected, chatState) {
+      if (!selected) {
+        return "未选中会话。";
+      }
+      if (chatState.loading) {
+        return "历史消息加载中。";
+      }
+      if (chatState.error) {
+        return chatState.error;
+      }
+      if (!chatState.initialized) {
+        return state.ws.status === "connected" ? "等待加载历史消息。" : "WebSocket 未连接，暂时无法获取历史。";
+      }
+      const loaded = chatState.messages.length;
+      const total = chatState.total || loaded;
+      return chatState.hasMore
+        ? "已加载 " + loaded + " / " + total + " 条，可继续向上翻页。"
+        : "已显示最近 " + loaded + " 条消息。";
+    }
+
+    function getGroupMemberName(groupUuid, userId) {
+      const cache = getGroupMemberCache(groupUuid);
+      return cache.membersById[userId] || userId;
+    }
+
+    function getMessageDisplayName(selected, message) {
+      if (message.send_id === getCurrentUserId()) {
+        return "你";
+      }
+      if (selected.session_type === 0) {
+        return selected.target_name || message.send_id;
+      }
+      return getGroupMemberName(selected.target_id, message.send_id);
+    }
+
+    function getMessageDisplayBody(message) {
+      if (Number(message.status) === 2) {
+        return message.send_id === getCurrentUserId() ? "你撤回了一条消息" : "对方撤回了一条消息";
+      }
+      if (Number(message.type) !== 0) {
+        return "[暂不支持展示的消息类型]";
+      }
+      return message.content || "";
+    }
+
+    function canRecallMessage(message) {
+      if (!message || message.send_id !== getCurrentUserId() || Number(message.status) !== 1 || message.is_recalling) {
+        return false;
+      }
+      if (state.ws.status !== "connected") {
+        return false;
+      }
+      const sentAt = messageTimeValue(message.send_at);
+      if (!sentAt) {
+        return false;
+      }
+      return (Date.now() - sentAt) <= 2 * 60 * 1000;
+    }
+
+    function buildMessageListHtml(selected, chatState) {
+      if (chatState.error && !chatState.messages.length) {
+        return emptyState(chatState.error);
+      }
+      if (chatState.loading && !chatState.messages.length) {
+        return emptyState("正在加载消息历史…");
+      }
+      if (!chatState.messages.length) {
+        if (state.ws.status !== "connected" && !chatState.initialized) {
+          return emptyState("WebSocket 未连接，暂时无法获取消息历史。");
+        }
+        return emptyState("暂无消息，发送一条文本消息开始聊天。");
+      }
+
+      return chatState.messages.map(function (message) {
+        const own = message.send_id === getCurrentUserId();
+        const recalled = Number(message.status) === 2;
+        const actionHtml = own && Number(message.status) === 1
+          ? (
+            '<div class="message-actions">' +
+            (message.is_recalling
+              ? '<button type="button" class="ghost" disabled>撤回中...</button>'
+              : (canRecallMessage(message)
+                ? '<button type="button" class="ghost" onclick="window.recallMessage(\'' + message.uuid + '\')">撤回</button>'
+                : "")) +
+            "</div>"
+          )
+          : "";
+
+        return (
+          '<article class="message-row ' + (own ? "is-own" : "is-other") + '">' +
+          '<div class="message-meta">' +
+          "<span>" + escapeHtml(getMessageDisplayName(selected, message)) + "</span>" +
+          "<span>" + escapeHtml(formatDateTime(message.send_at)) + "</span>" +
+          (recalled ? chip("已撤回", "neutral") : "") +
+          (message.is_recalling ? chip("撤回中", "warning") : "") +
+          "</div>" +
+          '<div class="message-bubble' + (recalled ? " is-recalled" : "") + (message.is_recalling ? " is-pending" : "") + '">' +
+          escapeHtml(getMessageDisplayBody(message)) +
+          "</div>" +
+          actionHtml +
+          "</article>"
+        );
+      }).join("");
+    }
+
+    function captureMessageListAnchor() {
+      const el = $("message-list");
+      if (!el) {
+        return null;
+      }
+      return {
+        scrollHeight: el.scrollHeight,
+        scrollTop: el.scrollTop
+      };
+    }
+
+    function restoreMessageListAnchor(anchor) {
+      const el = $("message-list");
+      if (!el || !anchor) {
+        return;
+      }
+      requestAnimationFrame(function () {
+        el.scrollTop = Math.max(0, anchor.scrollTop + (el.scrollHeight - anchor.scrollHeight));
+      });
+    }
+
+    function scrollMessagesToBottom(force) {
+      const el = $("message-list");
+      if (!el) {
+        return;
+      }
+      const nearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 120;
+      if (!force && !nearBottom) {
+        return;
+      }
+      requestAnimationFrame(function () {
+        el.scrollTop = el.scrollHeight;
+      });
+    }
+
+    async function hydrateSelectedSession(options) {
+      const opts = options || {};
+      const selected = state.sessions.selectedSession;
+      if (!selected) {
+        renderWorkbench();
+        return false;
+      }
+
+      if (selected.session_type === 1) {
+        await ensureGroupMembersLoaded(selected.target_id, { silent: true });
+      }
+
+      const chatState = getSessionChatState(selected.uuid);
+      if (!chatState.initialized && !chatState.loading) {
+        requestSessionHistory(selected, 1, { preserveScroll: false });
+      } else if (!opts.skipAutoRead && chatState.initialized && Number(selected.unread_count || 0) > 0) {
+        await markSessionRead(selected.uuid, { silent: true });
+      }
+
+      renderWorkbench();
+      return true;
+    }
+
+    function requestSessionHistory(session, page, options) {
+      const opts = options || {};
+      if (!session) {
+        return false;
+      }
+
+      const chatState = getSessionChatState(session.uuid);
+      if (!state.ws.socket || state.ws.status !== "connected") {
+        chatState.loading = false;
+        chatState.error = "WebSocket 未连接，暂时无法获取消息历史。";
+        renderWorkbench();
+        return false;
+      }
+      if (chatState.loading) {
+        return false;
+      }
+
+      const seq = nextWsSeq("history");
+      const payload = buildHistoryPayload(seq, session.uuid, page, chatState.size);
+      const anchor = opts.preserveScroll ? captureMessageListAnchor() : null;
+
+      chatState.loading = true;
+      chatState.error = "";
+      renderWorkbench();
+      const ok = sendWsPayload(payload, "WS 发送 cmd=2004", {
+        kind: "history",
+        sessionUuid: session.uuid,
+        page: page,
+        anchor: anchor
+      });
+      if (!ok) {
+        chatState.loading = false;
+        chatState.error = "消息历史请求发送失败。";
+        renderWorkbench();
+      }
+      return ok;
+    }
+
+    async function markSessionRead(sessionUuid, options) {
+      const opts = options || {};
+      const current = state.sessions.list.find(function (session) {
+        return session.uuid === sessionUuid;
+      });
+      if (!current || Number(current.unread_count || 0) <= 0) {
+        return true;
+      }
+
+      const result = await apiRequest("PUT", "/sessions/" + sessionUuid + "/read", { body: {} });
+      if (!result.ok) {
+        if (!opts.silent) {
+          flash("清未读失败：" + result.message, "danger");
+        }
+        return false;
+      }
+
+      setSessionUnreadLocal(sessionUuid, 0);
+      renderSessions();
+      if (!opts.silent) {
+        flash("未读数已清零。", "success");
+      }
+      return true;
+    }
+
+    function buildChatPayload(seq, content) {
+      const selected = state.sessions.selectedSession;
+      if (!selected) {
+        return null;
+      }
+
+      return {
         cmd: 2001,
-        seq: "preview_" + Date.now(),
+        seq: seq,
         data: {
           session_type: selected.session_type,
           receive_id: selected.target_id,
           type: 0,
-          content: state.sessions.payloadDraft.content || DEFAULTS.sampleMessage,
+          content: content,
           url: ""
         }
       };
-      state.sessions.chatPayloadPreview = JSON.stringify(payload, null, 2);
+    }
+
+    function buildHistoryPayload(seq, sessionId, page, size) {
+      return {
+        cmd: 2004,
+        seq: seq,
+        data: {
+          session_id: sessionId,
+          page: page,
+          size: size
+        }
+      };
+    }
+
+    function buildRecallPayload(seq, msgUuid) {
+      return {
+        cmd: 2006,
+        seq: seq,
+        data: {
+          msg_uuid: msgUuid
+        }
+      };
+    }
+
+    function updatePayloadPreview() {
+      const content = String(state.sessions.payloadDraft.content || "");
+      const payload = buildChatPayload("preview_" + Date.now(), content);
+      state.sessions.chatPayloadPreview = payload ? JSON.stringify(payload, null, 2) : "";
       renderWorkbench();
+    }
+
+    function buildWsUrl() {
+      const url = new URL(buildApiBase() + "/ws");
+      url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+      if (state.auth.token) {
+        url.searchParams.set("token", state.auth.token);
+      }
+      return url.toString();
+    }
+
+    function addWsLog(statusCode, message, requestBody, responseBody) {
+      addLog({
+        time: isoNow(),
+        kind: "ws",
+        method: "WS",
+        path: "/api/v1/ws",
+        statusCode: statusCode,
+        bizCode: "-",
+        message: message,
+        requestBody: requestBody,
+        responseBody: responseBody
+      });
+    }
+
+    function disconnectWebSocket(options) {
+      const opts = options || {};
+      const socket = state.ws.socket;
+      state.ws.intentionalClose = true;
+      state.ws.socket = null;
+      state.ws.status = "disconnected";
+      state.ws.lastError = opts.keepError ? state.ws.lastError : "";
+      cancelWsPending();
+
+      if (socket) {
+        try {
+          socket.close(1000, opts.reason || "client disconnect");
+        } catch (_) {
+          // ignore close errors
+        }
+      }
+
+      if (!opts.silent) {
+        addWsLog("CLOSE", "WS 主动断开", null, { reason: opts.reason || "client disconnect" });
+      }
+
+      renderHero();
+      renderCapabilities();
+      renderWorkbench();
+    }
+
+    function reconnectWebSocket(reason) {
+      disconnectWebSocket({ silent: true, reason: reason || "reconnect" });
+      connectWebSocket();
+    }
+
+    function connectWebSocket() {
+      if (!isAuthed()) {
+        return;
+      }
+      if (typeof WebSocket === "undefined") {
+        state.ws.status = "disconnected";
+        state.ws.lastError = "当前浏览器不支持 WebSocket。";
+        addWsLog("ERR", "WS 不受支持", null, { error: state.ws.lastError });
+        renderHero();
+        renderCapabilities();
+        renderWorkbench();
+        return;
+      }
+      if (state.ws.status === "connecting" || state.ws.status === "connected") {
+        return;
+      }
+
+      const url = buildWsUrl();
+      let socket = null;
+      state.ws.intentionalClose = false;
+      state.ws.status = "connecting";
+      state.ws.lastError = "";
+      renderHero();
+      renderCapabilities();
+      renderWorkbench();
+      addWsLog("CONNECT", "WS 建立连接中", { url: url }, null);
+
+      try {
+        socket = new WebSocket(url);
+      } catch (error) {
+        state.ws.status = "disconnected";
+        state.ws.lastError = error.message || "WebSocket 创建失败。";
+        addWsLog("ERR", "WS 打开失败", { url: url }, { error: state.ws.lastError });
+        renderHero();
+        renderCapabilities();
+        renderWorkbench();
+        return;
+      }
+
+      state.ws.socket = socket;
+
+      socket.addEventListener("open", function () {
+        if (state.ws.socket !== socket) {
+          return;
+        }
+        state.ws.status = "connected";
+        state.ws.lastError = "";
+        addWsLog("OPEN", "WS 已连接", { url: url }, { status: "connected" });
+        renderHero();
+        renderCapabilities();
+        renderWorkbench();
+        hydrateSelectedSession({ skipAutoRead: false });
+      });
+
+      socket.addEventListener("error", function () {
+        if (state.ws.socket !== socket) {
+          return;
+        }
+        state.ws.lastError = "WebSocket 连接异常。";
+        addWsLog("ERR", "WS 连接异常", null, { error: state.ws.lastError });
+        renderHero();
+        renderCapabilities();
+        renderWorkbench();
+      });
+
+      socket.addEventListener("close", function (event) {
+        if (state.ws.socket !== socket) {
+          return;
+        }
+        state.ws.socket = null;
+        state.ws.status = "disconnected";
+        cancelWsPending();
+        if (!state.ws.intentionalClose) {
+          state.ws.lastError = event.reason || ("连接关闭 (" + event.code + ")");
+        }
+        addWsLog(state.ws.intentionalClose ? "CLOSE" : "ERR", state.ws.intentionalClose ? "WS 已断开" : "WS 已关闭", null, {
+          code: event.code,
+          reason: event.reason || "",
+          wasClean: event.wasClean
+        });
+        state.ws.intentionalClose = false;
+        renderHero();
+        renderCapabilities();
+        renderWorkbench();
+      });
+
+      socket.addEventListener("message", function (event) {
+        if (state.ws.socket !== socket) {
+          return;
+        }
+        handleWsMessage(event.data);
+      });
+    }
+
+    function sendWsPayload(payload, message, pending) {
+      if (!state.ws.socket || state.ws.status !== "connected") {
+        flash("WebSocket 当前未连接。", "warning");
+        return false;
+      }
+
+      if (pending) {
+        setWsPending(payload.seq, pending);
+      }
+
+      try {
+        state.ws.socket.send(JSON.stringify(payload));
+        addWsLog("SEND", message, payload, null);
+        return true;
+      } catch (error) {
+        takeWsPending(payload.seq);
+        state.ws.lastError = error.message || "WebSocket 发送失败。";
+        addWsLog("ERR", "WS 发送失败", payload, { error: state.ws.lastError });
+        flash("消息发送失败：" + state.ws.lastError, "danger");
+        renderHero();
+        renderCapabilities();
+        renderWorkbench();
+        return false;
+      }
+    }
+
+    function handleWsMessage(rawData) {
+      if (typeof rawData !== "string") {
+        addWsLog("RECV", "WS 收到非文本报文", null, { type: typeof rawData });
+        return;
+      }
+
+      rawData.split(/\n+/).map(function (chunk) {
+        return chunk.trim();
+      }).filter(Boolean).forEach(function (chunk) {
+        let envelope = null;
+        try {
+          envelope = JSON.parse(chunk);
+        } catch (error) {
+          addWsLog("ERR", "WS 报文解析失败", null, { raw: chunk, error: error.message || "解析失败" });
+          return;
+        }
+
+        handleWsEnvelope(envelope);
+      });
+    }
+
+    function handleWsEnvelope(envelope) {
+      const cmd = Number(envelope && envelope.cmd);
+      const data = envelope && envelope.data ? envelope.data : null;
+      addWsLog("RECV", "WS 收到 cmd=" + String(cmd || "-"), null, envelope);
+
+      if (cmd === 2002) {
+        handleChatAck(envelope, data);
+        return;
+      }
+
+      if (cmd === 2003) {
+        handleChatPush(data);
+        return;
+      }
+
+      if (cmd === 2005) {
+        handleHistoryAck(envelope, data);
+        return;
+      }
+
+      if (cmd === 2007) {
+        handleRecallAck(envelope, data);
+        return;
+      }
+
+      if (cmd === 2008) {
+        handleRecallPush(data);
+      }
+    }
+
+    function handleChatAck(envelope, data) {
+      const pending = takeWsPending(String(envelope && envelope.seq || ""));
+      if (!data || Number(data.status) !== 1) {
+        flash("消息发送失败：" + ((data && data.message) || "未知错误"), "danger");
+        return;
+      }
+
+      if (pending && pending.kind === "send") {
+        const chatState = getSessionChatState(pending.sessionUuid);
+        const beforeCount = chatState.messages.length;
+        const message = normalizeMessage({
+          uuid: data.msg_uuid,
+          session_id: data.session_id || pending.sessionUuid,
+          type: pending.request.data.type,
+          content: pending.request.data.content,
+          url: pending.request.data.url,
+          send_id: getCurrentUserId(),
+          receive_id: pending.request.data.receive_id,
+          status: 1,
+          send_at: data.send_at
+        }, pending.sessionUuid);
+
+        chatState.messages = mergeMessages(chatState.messages, [message]);
+        if (chatState.messages.length > beforeCount) {
+          chatState.total = Math.max(chatState.total + 1, chatState.messages.length);
+        }
+        applyLocalSessionSummary(pending.sessionUuid);
+        if (state.sessions.payloadDraft.content === pending.request.data.content) {
+          state.sessions.payloadDraft.content = "";
+        }
+        renderSessions();
+        scrollMessagesToBottom(true);
+      }
+
+      flash("消息已发送。", "success");
+      syncSessionsAfterWs();
+    }
+
+    function handleChatPush(data) {
+      const message = normalizeMessage(data);
+      if (!message || !message.session_id) {
+        return;
+      }
+
+      const chatState = getSessionChatState(message.session_id);
+      const beforeCount = chatState.messages.length;
+      chatState.messages = mergeMessages(chatState.messages, [message]);
+      if (chatState.messages.length > beforeCount) {
+        chatState.total = Math.max(chatState.total + 1, chatState.messages.length);
+      }
+      applyLocalSessionSummary(message.session_id);
+
+      const isSelected = state.sessions.selectedSession && state.sessions.selectedSession.uuid === message.session_id;
+      if (isSelected) {
+        setSessionUnreadLocal(message.session_id, 0);
+      } else {
+        incrementSessionUnreadLocal(message.session_id);
+      }
+
+      renderSessions();
+      if (isSelected) {
+        scrollMessagesToBottom(true);
+      }
+      syncSessionsAfterWs();
+    }
+
+    function handleHistoryAck(envelope, data) {
+      const pending = takeWsPending(String(envelope && envelope.seq || ""));
+      if (!pending || pending.kind !== "history") {
+        return;
+      }
+
+      const chatState = getSessionChatState(pending.sessionUuid);
+      chatState.loading = false;
+
+      if (!data || Number(data.status) !== 1) {
+        chatState.error = (data && data.message) || "消息历史加载失败。";
+        renderWorkbench();
+        return;
+      }
+
+      const list = Array.isArray(data.list) ? data.list : [];
+      const incoming = list.map(function (item) {
+        return normalizeMessage(item, pending.sessionUuid);
+      }).filter(Boolean).reverse();
+
+      chatState.messages = mergeMessages(chatState.messages, incoming);
+      chatState.page = pending.page;
+      chatState.total = Number(data.total || 0);
+      chatState.hasMore = (pending.page * chatState.size) < chatState.total;
+      chatState.initialized = true;
+      chatState.error = "";
+
+      const isSelected = state.sessions.selectedSession && state.sessions.selectedSession.uuid === pending.sessionUuid;
+      if (isSelected) {
+        renderSessions();
+        if (pending.anchor) {
+          restoreMessageListAnchor(pending.anchor);
+        } else {
+          scrollMessagesToBottom(true);
+        }
+        if (Number(state.sessions.selectedSession.unread_count || 0) > 0) {
+          markSessionRead(pending.sessionUuid, { silent: true });
+        }
+      } else {
+        renderWorkbench();
+      }
+    }
+
+    function handleRecallAck(envelope, data) {
+      const pending = takeWsPending(String(envelope && envelope.seq || ""));
+      if (!data || Number(data.status) !== 1) {
+        if (pending && pending.kind === "recall") {
+          setMessageRecalling(pending.messageUuid, false);
+          renderSessions();
+        }
+        flash("消息撤回失败：" + ((data && data.message) || "未知错误"), "danger");
+        return;
+      }
+
+      const affected = applyRecallStateToCaches(data.msg_uuid, Number(data.message_status || 2));
+      if (pending && pending.kind === "recall" && !affected.length) {
+        setMessageRecalling(pending.messageUuid, false);
+      }
+      renderSessions();
+      flash("消息已撤回。", "success");
+      syncSessionsAfterWs();
+    }
+
+    function handleRecallPush(data) {
+      if (!data || !data.msg_uuid) {
+        return;
+      }
+      applyRecallStateToCaches(data.msg_uuid, Number(data.message_status || 2));
+      renderSessions();
+      syncSessionsAfterWs();
+    }
+
+    async function syncSessionsAfterWs() {
+      const selectedUuid = state.sessions.selectedSession ? state.sessions.selectedSession.uuid : "";
+      await loadSessions(true, selectedUuid);
+      if (selectedUuid) {
+        setSessionUnreadLocal(selectedUuid, 0);
+        renderSessions();
+      }
+    }
+
+    function sendChatMessage() {
+      if (!isAuthed()) {
+        flash("请先登录。", "warning");
+        return;
+      }
+      if (!state.sessions.selectedSession) {
+        flash("请先选择会话。", "warning");
+        return;
+      }
+
+      const content = String(state.sessions.payloadDraft.content || "").trim();
+      if (!content) {
+        flash("请输入消息内容。", "warning");
+        return;
+      }
+
+      const seq = nextWsSeq("chat");
+      const payload = buildChatPayload(seq, content);
+      if (!payload) {
+        flash("当前聊天 payload 构建失败。", "warning");
+        return;
+      }
+
+      if (sendWsPayload(payload, "WS 发送 cmd=2001", {
+        kind: "send",
+        sessionUuid: state.sessions.selectedSession.uuid,
+        request: payload
+      })) {
+        flash("消息报文已发送，等待 ACK。", "info");
+      }
+    }
+
+    function loadEarlierMessages() {
+      if (!state.sessions.selectedSession) {
+        flash("请先选择会话。", "warning");
+        return;
+      }
+      const chatState = getSessionChatState(state.sessions.selectedSession.uuid);
+      if (chatState.loading) {
+        return;
+      }
+      requestSessionHistory(state.sessions.selectedSession, chatState.initialized ? (chatState.page + 1) : 1, {
+        preserveScroll: chatState.initialized
+      });
+    }
+
+    function recallMessage(messageUuid) {
+      const selected = state.sessions.selectedSession;
+      if (!selected) {
+        flash("请先选择会话。", "warning");
+        return;
+      }
+
+      const chatState = getSessionChatState(selected.uuid);
+      const current = chatState.messages.find(function (message) {
+        return message.uuid === messageUuid;
+      });
+      if (!current) {
+        flash("未找到要撤回的消息。", "warning");
+        return;
+      }
+      if (!canRecallMessage(current)) {
+        flash("当前消息已超过撤回时限，或暂时不可撤回。", "warning");
+        return;
+      }
+
+      setMessageRecalling(messageUuid, true);
+      renderSessions();
+
+      const seq = nextWsSeq("recall");
+      const payload = buildRecallPayload(seq, messageUuid);
+      if (sendWsPayload(payload, "WS 发送 cmd=2006", {
+        kind: "recall",
+        messageUuid: messageUuid
+      })) {
+        flash("撤回请求已发送，等待 ACK。", "info");
+      } else {
+        setMessageRecalling(messageUuid, false);
+        renderSessions();
+      }
     }
 
     async function copyText(text) {
@@ -2187,6 +3454,7 @@
         return false;
       }
       await refreshDashboard(true);
+      connectWebSocket();
       flash("已恢复本地登录态。", "success");
       return true;
     }
@@ -2256,6 +3524,7 @@
       const profileOk = await refreshProfile({ silent: true });
       if (profileOk) {
         await refreshDashboard(true);
+        connectWebSocket();
         flash("登录成功，已加载控制台数据。", "success");
       } else {
         flash("登录成功，但拉取个人资料失败。", "warning");
@@ -2524,6 +3793,7 @@
 
       state.groups.current = results[0].data;
       state.groups.members = Array.isArray(results[1].data && results[1].data.list) ? results[1].data.list : [];
+      seedGroupMemberCache(uuid, state.groups.members);
       state.groups.inviteText = "";
       renderGroups();
     }
@@ -2603,10 +3873,11 @@
       }
       const uuid = result.data && result.data.uuid ? result.data.uuid : "";
       flash("会话已创建。", "success");
-      await loadSessions(true, uuid);
+      await loadSessions(true, uuid, { hydrateSelected: true });
     }
 
-    async function loadSessions(silent, selectUuid) {
+    async function loadSessions(silent, selectUuid, options) {
+      const opts = options || {};
       const result = await apiRequest("GET", "/sessions", { query: { page: 1, size: 50 } });
       if (!result.ok) {
         if (!silent) flash("加载会话列表失败：" + result.message, "danger");
@@ -2615,12 +3886,16 @@
       state.sessions.list = Array.isArray(result.data && result.data.list) ? result.data.list : [];
       syncSelectedSession(selectUuid);
       renderSessions();
+      if (opts.hydrateSelected && state.sessions.selectedSession) {
+        await hydrateSelectedSession({ skipAutoRead: false });
+      }
       return true;
     }
 
     function selectSession(uuid) {
       syncSelectedSession(uuid);
       renderSessions();
+      hydrateSelectedSession({ skipAutoRead: false });
     }
 
     async function toggleSessionTop(uuid) {
@@ -2641,13 +3916,7 @@
     }
 
     async function clearSessionUnread(uuid) {
-      const result = await apiRequest("PUT", "/sessions/" + uuid + "/read", { body: {} });
-      if (!result.ok) {
-        flash("清未读失败：" + result.message, "danger");
-        return;
-      }
-      flash("未读数已清零。", "success");
-      await loadSessions(true, uuid);
+      await markSessionRead(uuid, { silent: false });
     }
 
     async function deleteSession(uuid) {
@@ -2662,6 +3931,7 @@
         state.sessions.sessionMeta = null;
         updatePayloadPreview();
       }
+      delete state.sessions.messageCache[uuid];
       flash("会话已删除。", "success");
       await loadSessions(true);
     }
@@ -2683,21 +3953,27 @@
       flash(ok ? "payload 已复制。" : "复制失败，请手动复制。", ok ? "success" : "warning");
     }
 
-    function saveConfigFromInputs() {
+    async function saveConfigFromInputs() {
       state.config.baseUrl = normalizeBaseUrl($("config-base-url").value);
       state.config.apiPrefix = normalizeApiPrefix($("config-api-prefix").value);
       persistConfig();
       renderConfig();
       renderHero();
+      if (isAuthed()) {
+        reconnectWebSocket("config updated");
+      }
       flash("运行配置已保存。", "success");
     }
 
-    function resetConfig() {
+    async function resetConfig() {
       state.config.baseUrl = DEFAULTS.baseUrl;
       state.config.apiPrefix = DEFAULTS.apiPrefix;
       persistConfig();
       renderConfig();
       renderHero();
+      if (isAuthed()) {
+        reconnectWebSocket("config reset");
+      }
       flash("已恢复默认配置。", "info");
     }
 
@@ -2788,7 +4064,9 @@
       $("btn-refresh-groups").addEventListener("click", function () { loadGroups(false); });
       $("btn-create-group").addEventListener("click", createGroup);
       $("btn-refresh-sessions").addEventListener("click", function () { loadSessions(false); });
+      $("btn-load-history").addEventListener("click", loadEarlierMessages);
       $("btn-copy-payload").addEventListener("click", copyPayload);
+      $("btn-disabled-send").addEventListener("click", sendChatMessage);
       $("btn-clear-logs").addEventListener("click", clearLogs);
 
       bindValue("config-base-url", function (value) { state.config.baseUrl = value; });
@@ -2849,6 +4127,7 @@
     window.toggleSessionTop = toggleSessionTop;
     window.clearSessionUnread = clearSessionUnread;
     window.deleteSession = deleteSession;
+    window.recallMessage = recallMessage;
 
     document.addEventListener("DOMContentLoaded", bootstrap);
   </script>

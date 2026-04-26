@@ -20,14 +20,13 @@ func NewWebsocketHandler(gateway *websocket.Gateway) *WebsocketHandler {
 // WsUpgrade WebSocket 连接入口
 // @Summary      WebSocket 连接
 // @Description  将 HTTP 连接升级为 WebSocket 长连接，用于实时消息推送和收发。
-//
-//	客户端通过 query 参数传递 JWT Token 进行鉴权。
-//	连接成功后可发送以下指令：
-//	- cmd=1001 Ping 心跳（服务端回复 cmd=1002 Pong）
-//	- cmd=2001 发送聊天消息（服务端回复 cmd=2002 ACK，并通过 cmd=2003 推送给接收方）
-//	- cmd=3001 系统事件（服务端主动推送）
-//
+// @Description  鉴权优先读取 Authorization: Bearer <token>，浏览器场景下也支持 query 参数 token。
+// @Description  连接成功后可发送以下指令：
+// @Description  - cmd=1001 Ping 心跳（服务端回复 cmd=1002 Pong）
+// @Description  - cmd=2001 发送聊天消息（服务端回复 cmd=2002 ACK，并通过 cmd=2003 推送给接收方）
+// @Description  - cmd=3001 系统事件（服务端主动推送）
 // @Tags         WebSocket
+// @Param        token  query     string  false  "JWT Token，浏览器直连时可通过 query 传入"
 // @Success      101    "协议升级成功，WebSocket 连接已建立"
 // @Failure      200    {object}  response.Response{data=nil}  "Token 无效 / Token 缺失"
 // @Router       /ws [get]

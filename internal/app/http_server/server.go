@@ -70,7 +70,7 @@ func NewServer() (h *Server) {
 	authService := service.NewAuthService(userRepo)
 	contactService := service.NewContactService(contactRepo)
 	messageService := service.NewMessageService(messageRepo, sessionRepo, contactRepo, groupRepo)
-	sessionService := service.NewSessionService(sessionRepo, userRepo, groupRepo)
+	sessionService := service.NewSessionService(sessionRepo, userRepo, contactRepo, groupRepo)
 	accountLifecycleService := service.NewAccountLifecycleService(userRepo, txManager)
 
 	// ==============================
@@ -94,7 +94,6 @@ func NewServer() (h *Server) {
 			Group:       restful.NewGroupHandler(groupService),
 			Application: restful.NewApplicationHandler(applicationService),
 			Session:     restful.NewSessionHandler(sessionService),
-			Message:     restful.NewMessageHandler(messageService),
 		},
 		WebSocket: handler.WebSocket{
 			WS: websocket.NewWebsocketHandler(webSocketGateway),

@@ -29,15 +29,20 @@ type SessionInfo struct {
 type SessionService struct {
 	sessionRepo *repository.SessionRepo
 	userRepo    *repository.UserRepo
+	contactRepo *repository.ContactRepo
 	groupRepo   *repository.GroupRepo
 }
 
 func NewSessionService(
-	sessionRepo *repository.SessionRepo, userRepo *repository.UserRepo, groupRepo *repository.GroupRepo,
+	sessionRepo *repository.SessionRepo,
+	userRepo *repository.UserRepo,
+	contactRepo *repository.ContactRepo,
+	groupRepo *repository.GroupRepo,
 ) *SessionService {
 	return &SessionService{
 		sessionRepo: sessionRepo,
 		userRepo:    userRepo,
+		contactRepo: contactRepo,
 		groupRepo:   groupRepo,
 	}
 }
@@ -113,11 +118,21 @@ func (s *SessionService) getOwnedSession(ctx context.Context, userID, sessionUUI
 func (s *SessionService) CreateSession(ctx context.Context, userID, targetID string, sessionType int8) (string, error) {
 	switch sessionType {
 	case 0:
+		if targetID == userID {
+			return "", errcode.New(errcode.CannotAddSelf)
+		}
 		if _, err := s.userRepo.FindActiveByUUID(ctx, targetID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return "", errcode.New(errcode.UserNotFound)
 			}
 			return "", err
+		}
+		isFriend, err := s.contactRepo.ExistsActiveFriendship(ctx, userID, targetID)
+		if err != nil {
+			return "", err
+		}
+		if !isFriend {
+			return "", errcode.New(errcode.ContactNotFound)
 		}
 	case 1:
 		group, err := s.groupRepo.FindActiveByUUID(ctx, targetID)
@@ -146,7 +161,7 @@ func (s *SessionService) CreateSession(ctx context.Context, userID, targetID str
 	}
 
 	now := time.Now()
-	sess, err := s.sessionRepo.FindOrCreateByTarget(ctx, userID, targetID, sessionType, xid.New().String(), &now)
+	sess, err := s.sessionRepo.FindOrCreate(ctx, userID, targetID, sessionType, xid.New().String(), &now)
 	if err != nil {
 		return "", err
 	}

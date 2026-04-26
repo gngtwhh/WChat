@@ -39,6 +39,11 @@ func LoadRouters(app *handler.App, authSvc *service.AuthService) *gin.Engine {
 	}
 
 	// ==========================================
+	// [WebSocket] Authentication Required
+	// ==========================================
+	api.GET("/ws", middleware.AuthWS(authSvc), app.WS.WsUpgrade)
+
+	// ==========================================
 	// [PROTECTED] Authentication Required
 	// ==========================================
 	protected := api.Group("")
@@ -139,12 +144,6 @@ func LoadRouters(app *handler.App, authSvc *service.AuthService) *gin.Engine {
 		// 	messages.GET("", app.Message.GetMessageList)
 		// 	messages.PUT("/:uuid/recall", app.Message.RecallMessage) // 操作 Status=2
 		// }
-
-		// ==========================================
-		// WebSocket connection
-		// 客户端连接示例: ws://localhost:8080/ws
-		// ==========================================
-		protected.GET("/ws", app.WS.WsUpgrade)
 	}
 
 	return r

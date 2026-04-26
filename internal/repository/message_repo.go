@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"wchat/internal/model"
 
@@ -16,6 +17,7 @@ func NewMessageRepo(db *gorm.DB) *MessageRepo {
 	return &MessageRepo{db: db}
 }
 
+// FindMessageListByConversation queries messages by conversation ID with pagination
 func (r *MessageRepo) FindMessageListByConversation(ctx context.Context, conversationID string, offset, limit int) (
 	int64, []model.Message, error,
 ) {
@@ -35,9 +37,24 @@ func (r *MessageRepo) FindMessageListByConversation(ctx context.Context, convers
 	return total, messages, err
 }
 
+// FindActiveByUUID finds an active message by its UUID
 func (r *MessageRepo) FindActiveByUUID(ctx context.Context, uuid string) (*model.Message, error) {
 	msg, err := gorm.G[model.Message](r.db).Where("uuid = ?", uuid).First(ctx)
 	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
+func (r *MessageRepo) FindLatestVisibleByConversation(ctx context.Context, conversationID string) (*model.Message, error) {
+	msg, err := gorm.G[model.Message](r.db).
+		Where("conversation_id = ? AND status <> ?", conversationID, 2).
+		Order("send_at DESC, id DESC").
+		First(ctx)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &msg, nil

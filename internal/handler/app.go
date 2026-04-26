@@ -18,7 +18,6 @@ type Restful struct {
 	Group       *restful.GroupHandler
 	Application *restful.ApplicationHandler
 	Session     *restful.SessionHandler
-	Message     *restful.MessageHandler
 }
 
 type WebSocket struct {
